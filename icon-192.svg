@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#0a0a0f"/>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0a0a0f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#glow)"/>
+  <!-- pentagon shape (Magic logo inspired) -->
+  <polygon points="96,20 172,72 144,158 48,158 20,72" fill="none" stroke="#1e1b3a" stroke-width="2"/>
+  <!-- lightning bolt -->
+  <path d="M108 30 L72 98 H96 L84 162 L124 88 H100 Z" fill="url(#bolt)" opacity="0.95"/>
+  <!-- subtle inner glow -->
+  <path d="M108 30 L72 98 H96 L84 162 L124 88 H100 Z" fill="none" stroke="#c4b5fd" stroke-width="1" opacity="0.4"/>
+</svg>
