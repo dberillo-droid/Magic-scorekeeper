@@ -8,9 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Magic Score">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>Magic Score</title>
+<title>Magic Scorekeeper</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
@@ -25,8 +23,10 @@
 html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden;}
 body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 
+/* ── COLLAPSIBLE TOP ── */
 .top-wrap{flex-shrink:0;overflow:hidden;transition:max-height 0.32s cubic-bezier(.4,0,.2,1);}
 .top-wrap.collapsed{max-height:0!important;}
+
 .topbar{display:flex;align-items:center;gap:8px;padding:calc(var(--safe-top) + 6px) calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);}
 .logo{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;flex:1;}
 .wake-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;transition:all 0.3s;}
@@ -34,21 +34,33 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .tb-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;white-space:nowrap;}
 .tb-btn:active{opacity:0.6;transform:scale(0.95);}
 .tb-btn.on{background:rgba(251,191,36,0.12);border-color:#fbbf24;color:#fbbf24;}
+
 .strip{display:flex;gap:6px;padding:6px calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
 .strip::-webkit-scrollbar{display:none;}
 .sp-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .sp-btn.on{background:rgba(124,111,255,0.18);border-color:var(--accent);color:var(--accent2);}
 .sp-btn:active{opacity:0.6;}
-.toggle-handle{display:flex;align-items:center;justify-content:center;height:18px;flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--border);cursor:pointer;}
+
+/* ── TOGGLE HANDLE ── */
+.toggle-handle{
+  display:flex;align-items:center;justify-content:center;
+  height:18px;flex-shrink:0;
+  background:var(--s1);border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
 .toggle-handle svg{width:16px;height:16px;fill:var(--muted);transition:transform 0.3s;}
 .toggle-handle svg.flipped{transform:rotate(180deg);}
 
+/* ── ARENA ── */
 .arena{flex:1;min-height:0;padding:8px calc(var(--safe-right) + 8px) calc(var(--safe-bottom) + 8px) calc(var(--safe-left) + 8px);display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+
 .winner{display:none;text-align:center;padding:8px 12px;border-radius:12px;border:1px solid rgba(124,111,255,0.5);background:rgba(124,111,255,0.08);flex-shrink:0;animation:wglow 1.4s ease-in-out infinite alternate;}
 .winner.on{display:block;}
 .winner-label{font-size:9px;letter-spacing:2px;color:var(--accent2);font-weight:600;}
 .winner-name{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;}
 @keyframes wglow{from{border-color:rgba(124,111,255,0.2);}to{border-color:rgba(124,111,255,0.9);}}
+
+/* ── DICE PANEL ── */
 .dice-panel{display:none;flex-shrink:0;background:var(--s1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:10px 12px;}
 .dice-panel.on{display:block;}
 .dice-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
@@ -65,6 +77,7 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .db .ripple{position:absolute;border-radius:50%;background:rgba(251,191,36,0.3);transform:scale(0);animation:ripple 0.4s linear;pointer-events:none;}
 @keyframes ripple{to{transform:scale(4);opacity:0;}}
 
+/* ── GRID ── */
 .grid{flex:1;min-height:0;display:grid;gap:8px;}
 @media(orientation:portrait){
   .grid.p2{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
@@ -81,29 +94,53 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
   .grid.p6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;}
 }
 
+/* ── CARD ── */
 .card{background:var(--s2);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0;transition:opacity 0.3s;}
 .card.dead{opacity:0.35;}
 .card.dead::after{content:'SCONFITTO';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;letter-spacing:3px;color:rgba(239,68,68,0.9);background:rgba(0,0,0,0.5);border-radius:16px;z-index:20;}
+
+/* mana symbol watermark */
 .card-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;opacity:0.28;font-size:clamp(70px,16cqh,150px);line-height:1;user-select:none;filter:drop-shadow(0 0 12px currentColor);}
+
 .card-accent{height:3px;flex-shrink:0;position:relative;z-index:1;}
 .card-head{display:flex;align-items:center;gap:7px;padding:6px 10px 3px;flex-shrink:0;position:relative;z-index:1;}
 .avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif;}
 .name-inp{flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:13px;font-weight:600;color:var(--text);font-family:'Space Grotesk',sans-serif;}
 .name-inp::placeholder{color:var(--muted);font-weight:400;}
 .x-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+/* settings icon in card header */
 .settings-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
-.card-settings{display:none;flex-shrink:0;position:relative;z-index:5;background:rgba(0,0,0,0.45);padding:8px 10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+
+/* ── CARD SETTINGS PANEL ── */
+.card-settings{
+  display:none;flex-shrink:0;position:relative;z-index:5;
+  background:rgba(0,0,0,0.45);
+  padding:8px 10px;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
 .card-settings.on{display:block;}
 .cs-label{font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+
+/* color swatches */
 .color-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
 .swatch{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform 0.12s,border-color 0.12s;flex-shrink:0;}
 .swatch:active{transform:scale(0.88);}
 .swatch.selected{border-color:white;}
+
+/* mana theme buttons */
 .mana-row{display:flex;gap:6px;flex-wrap:wrap;}
-.mana-btn{flex:1;min-width:36px;padding:5px 2px;border-radius:8px;border:1px solid var(--border2);background:var(--s3);font-size:16px;cursor:pointer;text-align:center;transition:all 0.12s;}
+.mana-btn{
+  flex:1;min-width:36px;
+  padding:5px 2px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--s3);
+  font-size:16px;cursor:pointer;text-align:center;
+  transition:all 0.12s;
+}
 .mana-btn:active{transform:scale(0.88);}
 .mana-btn.selected{border-color:white;background:rgba(255,255,255,0.1);}
 
+/* ── TAP AREA ── */
 .life-tap{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;position:relative;cursor:pointer;user-select:none;-webkit-user-select:none;z-index:1;}
 .tap-minus,.tap-plus{position:relative;display:flex;align-items:center;justify-content:center;transition:background 0.12s;}
 .tap-minus:active{background:rgba(248,113,113,0.1);}
@@ -121,6 +158,8 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .life-delta.show{opacity:1;}
 .life-sub{font-size:9px;font-weight:500;letter-spacing:2px;color:var(--muted);margin-top:3px;}
 .tap-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);letter-spacing:1px;opacity:0.45;pointer-events:none;white-space:nowrap;}
+
+/* ── COUNTERS ── */
 .counters{display:flex;align-items:center;gap:5px;padding:3px 8px 8px;flex-shrink:0;position:relative;z-index:1;}
 .dots-wrap{display:flex;gap:3px;align-items:center;}
 .dot,.edot{width:clamp(7px,2vw,11px);height:clamp(7px,2vw,11px);border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.12s;flex-shrink:0;}
@@ -130,10 +169,20 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .edot.on{background:#fbbf24;border-color:#fbbf24;}
 .c-icon{font-size:11px;flex-shrink:0;}
 .c-spacer{flex:1;}
+
+/* install */
+.install{display:none;background:var(--s2);border:1px solid rgba(124,111,255,0.3);border-radius:12px;padding:10px 14px;flex-shrink:0;}
+.install.on{display:block;}
+.install p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+.install p strong{color:var(--accent2);}
+.irow{display:flex;gap:7px;}
+.i-yes{font-size:11px;font-weight:600;padding:6px 14px;border-radius:8px;border:1px solid rgba(124,111,255,0.5);background:rgba(124,111,255,0.12);color:var(--accent2);cursor:pointer;}
+.i-no{font-size:11px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;}
 </style>
 </head>
 <body>
 
+<!-- collapsible top -->
 <div class="top-wrap" id="topWrap">
   <div class="topbar">
     <div class="logo">⚡ MAGIC SCORE</div>
@@ -152,11 +201,19 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
   </div>
 </div>
 
+<!-- drag handle to collapse/expand -->
 <div class="toggle-handle" id="toggleHandle" onclick="toggleTop()">
   <svg id="toggleArrow" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>
 </div>
 
 <div class="arena">
+  <div class="install" id="installBox">
+    <p>Installa <strong>Magic Score</strong> sulla schermata home per usarla come app nativa.</p>
+    <div class="irow">
+      <button class="i-yes" id="installBtn">Installa</button>
+      <button class="i-no" onclick="document.getElementById('installBox').classList.remove('on')">Non ora</button>
+    </div>
+  </div>
   <div class="winner" id="winBox">
     <div class="winner-label">VINCITORE</div>
     <div class="winner-name" id="winName"></div>
@@ -184,72 +241,205 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 </div>
 
 <script>
+/* ── AUDIO + HAPTIC ── */
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac = null;
+function getAC(){ if(!ac) ac = new AC(); return ac; }
+
+function haptic(type){
+  if(!navigator.vibrate) return;
+  if(type==='minus') navigator.vibrate([30]);
+  else if(type==='plus') navigator.vibrate([15]);
+  else if(type==='commit') navigator.vibrate([10,40,10]);
+  else if(type==='dice') navigator.vibrate([20,30,20,30,40]);
+  else if(type==='dead') navigator.vibrate([80,60,120]);
+  else if(type==='win') navigator.vibrate([60,40,60,40,200]);
+}
+
+function beep(freq, dur, vol=0.18, type='sine', decay='exp'){
+  try{
+    const ctx=getAC();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type; o.frequency.setValueAtTime(freq, ctx.currentTime);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    if(decay==='exp') g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    else g.gain.linearRampToValueAtTime(0, ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  } catch(e){}
+}
+
+function soundMinus(){
+  beep(220, 0.12, 0.15, 'triangle');
+}
+function soundPlus(){
+  beep(440, 0.10, 0.13, 'sine');
+}
+function soundCommitMinus(){
+  beep(180, 0.18, 0.18, 'triangle');
+  setTimeout(()=>beep(140, 0.14, 0.12, 'triangle'), 80);
+}
+function soundCommitPlus(){
+  beep(520, 0.10, 0.15, 'sine');
+  setTimeout(()=>beep(660, 0.12, 0.13, 'sine'), 70);
+}
+function soundDice(result, sides){
+  if(result===20 && sides===20){
+    // critico!
+    [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.15,0.18,'sine'),i*80));
+  } else if(result===1 && sides===20){
+    // fallimento
+    [300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.18,'sawtooth'),i*100));
+  } else {
+    beep(300+result*12, 0.12, 0.13, 'triangle');
+  }
+}
+function soundDead(){
+  [200,160,120].forEach((f,i)=>setTimeout(()=>beep(f,0.22,0.18,'sawtooth'),i*120));
+}
+function soundWin(){
+  [523,659,784,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.18,'sine'),i*90));
+}
+
+/* ── WAKE LOCK ── */
 let wakeLock=null;
-async function requestWake(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');document.getElementById('wakeDot').classList.remove('off');wakeLock.addEventListener('release',()=>document.getElementById('wakeDot').classList.add('off'));}}catch(e){}}
+async function requestWake(){
+  try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');document.getElementById('wakeDot').classList.remove('off');wakeLock.addEventListener('release',()=>document.getElementById('wakeDot').classList.add('off'));}}catch(e){}
+}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWake();});
 requestWake();
 
+/* ── PWA ── */
+let dp=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();dp=e;
+  document.getElementById('installBox').classList.add('on');
+  document.getElementById('installBtn').onclick=async()=>{dp.prompt();await dp.userChoice;document.getElementById('installBox').classList.remove('on');};
+});
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  const sw=`const C='mgc-v6';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['.']))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
 }
 
+/* ── COLLAPSE TOP ── */
 let topVisible=true;
 function toggleTop(){
   topVisible=!topVisible;
   const wrap=document.getElementById('topWrap');
   const arrow=document.getElementById('toggleArrow');
-  if(topVisible){wrap.style.maxHeight=wrap.scrollHeight+'px';wrap.classList.remove('collapsed');arrow.classList.remove('flipped');}
-  else{wrap.style.maxHeight=wrap.scrollHeight+'px';requestAnimationFrame(()=>wrap.classList.add('collapsed'));arrow.classList.add('flipped');}
+  if(topVisible){
+    wrap.style.maxHeight=wrap.scrollHeight+'px';
+    wrap.classList.remove('collapsed');
+    arrow.classList.remove('flipped');
+  } else {
+    wrap.style.maxHeight=wrap.scrollHeight+'px'; // set explicit before collapsing
+    requestAnimationFrame(()=>{wrap.classList.add('collapsed');});
+    arrow.classList.add('flipped');
+  }
 }
-window.addEventListener('DOMContentLoaded',()=>{const wrap=document.getElementById('topWrap');wrap.style.maxHeight=wrap.scrollHeight+'px';});
+// init max-height for transition to work
+window.addEventListener('DOMContentLoaded',()=>{
+  const wrap=document.getElementById('topWrap');
+  wrap.style.maxHeight=wrap.scrollHeight+'px';
+});
 
+/* ── DICE ── */
 let diceVisible=false;
-function toggleDice(){diceVisible=!diceVisible;document.getElementById('dicePanel').classList.toggle('on',diceVisible);document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);}
+function toggleDice(){
+  diceVisible=!diceVisible;
+  document.getElementById('dicePanel').classList.toggle('on',diceVisible);
+  document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);
+}
 function rollDice(sides,btn){
   const r=document.createElement('span');r.className='ripple';r.style.cssText='width:60px;height:60px;left:50%;top:50%;margin-left:-30px;margin-top:-30px;';btn.appendChild(r);setTimeout(()=>r.remove(),500);
   document.querySelectorAll('.db').forEach(b=>b.classList.remove('last-rolled'));btn.classList.add('last-rolled');
-  const result=document.getElementById('diceResult'),label=document.getElementById('diceLabel'),type=document.getElementById('diceType');
+  const result=document.getElementById('diceResult');
+  const label=document.getElementById('diceLabel');
+  const type=document.getElementById('diceType');
   let ticks=0;
-  const iv=setInterval(()=>{result.textContent=Math.ceil(Math.random()*sides);if(++ticks>=8){clearInterval(iv);const f=Math.ceil(Math.random()*sides);result.textContent=f;result.classList.remove('rolling');void result.offsetWidth;result.classList.add('rolling');label.textContent=f===20&&sides===20?'🎉 Critico!':f===1&&sides===20?'💀 Fallimento!':'Risultato';type.textContent='D'+sides;}},40);
+  const iv=setInterval(()=>{
+    result.textContent=Math.ceil(Math.random()*sides);
+    if(++ticks>=8){
+      clearInterval(iv);
+      const f=Math.ceil(Math.random()*sides);
+      result.textContent=f;
+      result.classList.remove('rolling');void result.offsetWidth;result.classList.add('rolling');
+      label.textContent=f===20&&sides===20?'🎉 Critico!':f===1&&sides===20?'💀 Fallimento!':'Risultato';
+      type.textContent='D'+sides;
+    }
+  },40);
 }
 
+/* ── THEME DATA ── */
+// 8 accent colors
 const PALETTE=[
-  {bar:'#f87171',bg:'rgba(248,113,113,0.15)',text:'#fca5a5'},
-  {bar:'#60a5fa',bg:'rgba(96,165,250,0.15)',text:'#93c5fd'},
-  {bar:'#f9fafb',bg:'rgba(249,250,251,0.12)',text:'#f9fafb'},
-  {bar:'#1a1a1a',bg:'rgba(80,70,60,0.25)',text:'#b8a898'},
-  {bar:'#4ade80',bg:'rgba(74,222,128,0.15)',text:'#86efac'},
-  {bar:'#c084fc',bg:'rgba(192,132,252,0.15)',text:'#e9d5ff'},
-  {bar:'#fbbf24',bg:'rgba(251,191,36,0.15)',text:'#fde68a'},
-  {bar:'#34d399',bg:'rgba(52,211,153,0.15)',text:'#6ee7b7'},
+  {bar:'#f87171',bg:'rgba(248,113,113,0.15)',text:'#fca5a5'},  // red
+  {bar:'#60a5fa',bg:'rgba(96,165,250,0.15)',text:'#93c5fd'},   // blue
+  {bar:'#f9fafb',bg:'rgba(249,250,251,0.12)',text:'#f9fafb'},  // white
+  {bar:'#1a1a1a',bg:'rgba(80,70,60,0.25)',text:'#b8a898'},     // black
+  {bar:'#4ade80',bg:'rgba(74,222,128,0.15)',text:'#86efac'},   // green
+  {bar:'#c084fc',bg:'rgba(192,132,252,0.15)',text:'#e9d5ff'},  // purple
+  {bar:'#fbbf24',bg:'rgba(251,191,36,0.15)',text:'#fde68a'},   // gold
+  {bar:'#34d399',bg:'rgba(52,211,153,0.15)',text:'#6ee7b7'},   // teal
 ];
+
+// 6 mana backgrounds: W U B R G C
 const MANA=[
-  {id:'W',emoji:'☀️',label:'Bianco'},{id:'U',emoji:'💧',label:'Blu'},
-  {id:'B',emoji:'💀',label:'Nero'},{id:'R',emoji:'🔥',label:'Rosso'},
-  {id:'G',emoji:'🌲',label:'Verde'},{id:'C',emoji:'💎',label:'Incolore'},
+  {id:'W',emoji:'☀️',label:'Bianco',tint:'rgba(255,250,220,0.04)'},
+  {id:'U',emoji:'💧',label:'Blu',tint:'rgba(30,100,220,0.06)'},
+  {id:'B',emoji:'💀',label:'Nero',tint:'rgba(40,20,60,0.08)'},
+  {id:'R',emoji:'🔥',label:'Rosso',tint:'rgba(200,50,20,0.06)'},
+  {id:'G',emoji:'🌲',label:'Verde',tint:'rgba(20,120,40,0.06)'},
+  {id:'C',emoji:'💎',label:'Incolore',tint:'rgba(160,160,180,0.05)'},
 ];
 
+/* ── STATE ── */
 let startLife=20,players=[],history=[],uid=0;
-const pending={};
 
-function mkP(name,ci){return{id:uid++,name,life:startLife,poison:0,energy:0,dead:false,colorIdx:ci%PALETTE.length,manaIdx:ci%MANA.length,settingsOpen:false};}
+function mkP(name,ci){
+  return{id:uid++,name,life:startLife,poison:0,energy:0,dead:false,
+    colorIdx:ci%PALETTE.length, manaIdx:ci%MANA.length, settingsOpen:false};
+}
 function init(){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];history=[];render();}
 function addPlayer(){if(players.length>=6)return;players.push(mkP('Giocatore '+(players.length+1),players.length));render();}
 function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);render();}
 function resetAll(){players.forEach(p=>{p.life=startLife;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
-function setLife(n){startLife=n;document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('on'));document.getElementById('b'+n)?.classList.add('on');players.forEach(p=>{p.life=n;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
+
+function setLife(n){
+  startLife=n;
+  document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('b'+n)?.classList.add('on');
+  players.forEach(p=>{p.life=n;p.poison=0;p.energy=0;p.dead=false;});
+  history=[];render();
+}
+
+// pending tap accumulation per player
+const pending={};  // id -> {delta, oldLife, timer}
 
 function changeLife(id,delta){
   const p=players.find(x=>x.id===id);if(!p)return;
-  if(!pending[id])pending[id]={delta:0,oldLife:p.life};
+
+  if(!pending[id]){
+    pending[id]={delta:0,oldLife:p.life};
+  }
   pending[id].delta+=delta;
   p.life=Math.max(0,pending[id].oldLife+pending[id].delta);
   if(p.life===0)p.dead=true;
   if(p.life>0&&p.dead&&p.poison<10)p.dead=false;
+
+  // feedback per ogni tap
+  if(delta<0){ haptic('minus'); soundMinus(); }
+  else { haptic('plus'); soundPlus(); }
+
   updateCardDisplay(p,pending[id].delta,true);
+
   clearTimeout(pending[id].timer);
   pending[id].timer=setTimeout(()=>{
     const acc=pending[id];
+    // feedback al commit
+    if(acc.delta<0){ haptic('commit'); soundCommitMinus(); }
+    else { haptic('commit'); soundCommitPlus(); }
     history.unshift({id,name:p.name||'?',delta:acc.delta,oldLife:acc.oldLife,newLife:p.life});
     if(history.length>40)history.pop();
     delete pending[id];
@@ -270,46 +460,104 @@ function updateCardDisplay(p,delta,accumulating=false){
   checkWinner();
 }
 
-function setPoison(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.poison=n;if(p.poison>=10)p.dead=true;checkWinner();render();}
+function setPoison(id,n){
+  const p=players.find(x=>x.id===id);if(!p)return;
+  p.poison=n;
+  if(p.poison>=10){ p.dead=true; soundDead(); haptic('dead'); }
+  checkWinner();render();
+}
 function setEnergy(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.energy=n;render();}
 function updateName(id,v){const p=players.find(x=>x.id===id);if(p)p.name=v;}
-function undoLast(){if(!history.length)return;const h=history.shift();const p=players.find(x=>x.id===h.id);if(p){p.life=h.oldLife;p.dead=p.life<=0||p.poison>=10;}checkWinner();render();}
-function checkWinner(){const alive=players.filter(p=>!p.dead);const wb=document.getElementById('winBox');if(players.length>1&&alive.length===1){wb.classList.add('on');document.getElementById('winName').textContent=alive[0].name||'Giocatore';}else wb.classList.remove('on');}
-function toggleSettings(id){const p=players.find(x=>x.id===id);if(!p)return;p.settingsOpen=!p.settingsOpen;players.forEach(q=>{if(q.id!==id)q.settingsOpen=false;});render();}
-function setColor(id,ci){const p=players.find(x=>x.id===id);if(!p)return;p.colorIdx=ci;render();}
-function setMana(id,mi){const p=players.find(x=>x.id===id);if(!p)return;p.manaIdx=mi;render();}
 
+function undoLast(){
+  if(!history.length)return;
+  const h=history.shift();
+  const p=players.find(x=>x.id===h.id);
+  if(p){p.life=h.oldLife;p.dead=p.life<=0||p.poison>=10;}
+  checkWinner();render();
+}
+
+function checkWinner(){
+  const alive=players.filter(p=>!p.dead);
+  const wb=document.getElementById('winBox');
+  if(players.length>1&&alive.length===1){
+    if(!wb.classList.contains('on')){ soundWin(); haptic('win'); }
+    wb.classList.add('on');
+    document.getElementById('winName').textContent=alive[0].name||'Giocatore';
+  } else wb.classList.remove('on');
+}
+
+function toggleSettings(id){
+  const p=players.find(x=>x.id===id);if(!p)return;
+  p.settingsOpen=!p.settingsOpen;
+  // close others
+  players.forEach(q=>{if(q.id!==id)q.settingsOpen=false;});
+  render();
+}
+
+function setColor(id,ci){
+  const p=players.find(x=>x.id===id);if(!p)return;
+  p.colorIdx=ci;render();
+}
+
+function setMana(id,mi){
+  const p=players.find(x=>x.id===id);if(!p)return;
+  p.manaIdx=mi;render();
+}
+
+/* ── RENDER ── */
 function render(){
   const grid=document.getElementById('grid');
   grid.className='grid p'+players.length;
+  // font size: fewer players = bigger numbers
   const fs={2:'clamp(56px,18cqh,160px)',3:'clamp(44px,14cqh,120px)',4:'clamp(36px,12cqh,100px)',5:'clamp(28px,10cqh,80px)',6:'clamp(24px,9cqh,72px)'};
-  document.documentElement.style.setProperty('--life-fs',fs[players.length]||fs[4]);
+  document.documentElement.style.setProperty('--life-fs', fs[players.length]||fs[4]);
   grid.innerHTML=players.map(p=>cardHTML(p)).join('');
 }
 
 function cardHTML(p){
-  const c=PALETTE[p.colorIdx],m=MANA[p.manaIdx];
+  const c=PALETTE[p.colorIdx];
+  const m=MANA[p.manaIdx];
   const init=((p.name||'G').trim().split(' ').map(w=>w[0]).join('').slice(0,2)||'G').toUpperCase();
   const lifeColor=p.life<=5?'#f87171':p.life<=10?'#fbbf24':'var(--text)';
-  const pdots=Array.from({length:10},(_,i)=>{const on=i<p.poison;return`<span class="dot${on?' on':''}" onclick="setPoison(${p.id},${on&&p.poison===i+1?i:i+1})"></span>`;}).join('');
-  const edots=Array.from({length:5},(_,i)=>{const on=i<p.energy;return`<span class="edot${on?' on':''}" onclick="setEnergy(${p.id},${on&&p.energy===i+1?i:i+1})"></span>`;}).join('');
-  const swatches=PALETTE.map((col,ci)=>`<span class="swatch${p.colorIdx===ci?' selected':''}" style="background:${col.bar};" onclick="setColor(${p.id},${ci})"></span>`).join('');
-  const manaButtons=MANA.map((mn,mi)=>`<button class="mana-btn${p.manaIdx===mi?' selected':''}" onclick="setMana(${p.id},${mi})" title="${mn.label}">${mn.emoji}</button>`).join('');
-  return`<div class="card${p.dead?' dead':''}" data-id="${p.id}" style="border-color:${p.settingsOpen?c.bar:'var(--border)'};">
+
+  const pdots=Array.from({length:10},(_,i)=>{
+    const on=i<p.poison;
+    return `<span class="dot${on?' on':''}" onclick="setPoison(${p.id},${on&&p.poison===i+1?i:i+1})"></span>`;
+  }).join('');
+  const edots=Array.from({length:5},(_,i)=>{
+    const on=i<p.energy;
+    return `<span class="edot${on?' on':''}" onclick="setEnergy(${p.id},${on&&p.energy===i+1?i:i+1})"></span>`;
+  }).join('');
+
+  // color swatches
+  const swatches=PALETTE.map((col,ci)=>
+    `<span class="swatch${p.colorIdx===ci?' selected':''}" style="background:${col.bar};" onclick="setColor(${p.id},${ci})"></span>`
+  ).join('');
+
+  // mana buttons
+  const manaButtons=MANA.map((mn,mi)=>
+    `<button class="mana-btn${p.manaIdx===mi?' selected':''}" onclick="setMana(${p.id},${mi})" title="${mn.label}">${mn.emoji}</button>`
+  ).join('');
+
+  return `<div class="card${p.dead?' dead':''}" data-id="${p.id}" style="background:var(--s2);border-color:${p.settingsOpen?c.bar:'var(--border)'};">
   <div class="card-bg" style="color:${c.bar};">${m.emoji}</div>
   <div class="card-accent" style="background:${c.bar}"></div>
   <div class="card-head">
     <div class="avatar" style="background:${c.bg};color:${c.text}">${init}</div>
     <input class="name-inp" value="${p.name}" placeholder="Nome..." oninput="updateName(${p.id},this.value)">
-    <button class="settings-btn" onclick="toggleSettings(${p.id})">⚙</button>
+    <button class="settings-btn" onclick="toggleSettings(${p.id})" title="Personalizza">⚙</button>
     ${players.length>2?`<button class="x-btn" onclick="removePlayer(${p.id})">×</button>`:''}
   </div>
+
+  <!-- per-player settings -->
   <div class="card-settings${p.settingsOpen?' on':''}">
     <div class="cs-label">COLORE</div>
     <div class="color-row">${swatches}</div>
     <div class="cs-label">SFONDO MANA</div>
     <div class="mana-row">${manaButtons}</div>
   </div>
+
   <div class="life-tap">
     <div class="tap-minus" onclick="changeLife(${p.id},-1)"></div>
     <div class="tap-plus"  onclick="changeLife(${p.id},+1)"></div>
@@ -320,6 +568,7 @@ function cardHTML(p){
       <div class="tap-hint">← −1 &nbsp;|&nbsp; +1 →</div>
     </div>
   </div>
+
   <div class="counters">
     <span class="c-icon">☠</span><div class="dots-wrap">${pdots}</div>
     <div class="c-spacer"></div>
