@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Magic Score">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Magic Score</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+:root{
+  --bg:#0a0a0f;--s1:#12121a;--s2:#1a1a26;--s3:#22223a;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#f0f0ff;--muted:rgba(255,255,255,0.38);
+  --accent:#7c6fff;--accent2:#a78bfa;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
+}
+html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow:hidden;}
+body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
+
+.top-wrap{flex-shrink:0;overflow:hidden;transition:max-height 0.32s cubic-bezier(.4,0,.2,1);}
+.top-wrap.collapsed{max-height:0!important;}
+.topbar{display:flex;align-items:center;gap:8px;padding:calc(var(--safe-top) + 6px) calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;flex:1;}
+.wake-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;transition:all 0.3s;}
+.wake-dot.off{background:var(--muted);box-shadow:none;}
+.tb-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;white-space:nowrap;}
+.tb-btn:active{opacity:0.6;transform:scale(0.95);}
+.tb-btn.on{background:rgba(251,191,36,0.12);border-color:#fbbf24;color:#fbbf24;}
+.strip{display:flex;gap:6px;padding:6px calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.strip::-webkit-scrollbar{display:none;}
+.sp-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.sp-btn.on{background:rgba(124,111,255,0.18);border-color:var(--accent);color:var(--accent2);}
+.sp-btn:active{opacity:0.6;}
+.toggle-handle{display:flex;align-items:center;justify-content:center;height:18px;flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--border);cursor:pointer;}
+.toggle-handle svg{width:16px;height:16px;fill:var(--muted);transition:transform 0.3s;}
+.toggle-handle svg.flipped{transform:rotate(180deg);}
+
+.arena{flex:1;min-height:0;padding:8px calc(var(--safe-right) + 8px) calc(var(--safe-bottom) + 8px) calc(var(--safe-left) + 8px);display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+.winner{display:none;text-align:center;padding:8px 12px;border-radius:12px;border:1px solid rgba(124,111,255,0.5);background:rgba(124,111,255,0.08);flex-shrink:0;animation:wglow 1.4s ease-in-out infinite alternate;}
+.winner.on{display:block;}
+.winner-label{font-size:9px;letter-spacing:2px;color:var(--accent2);font-weight:600;}
+.winner-name{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;}
+@keyframes wglow{from{border-color:rgba(124,111,255,0.2);}to{border-color:rgba(124,111,255,0.9);}}
+.dice-panel{display:none;flex-shrink:0;background:var(--s1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:10px 12px;}
+.dice-panel.on{display:block;}
+.dice-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.dice-result-wrap{flex:1;display:flex;align-items:center;gap:8px;}
+.dice-result{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#fbbf24;line-height:1;min-width:40px;text-align:center;}
+.dice-result.rolling{animation:diceAnim 0.4s ease-out;}
+@keyframes diceAnim{0%{transform:rotate(-15deg) scale(0.8);opacity:0.3;}40%{transform:rotate(8deg) scale(1.25);}70%{transform:rotate(-4deg) scale(1.1);}100%{transform:none;}}
+.dice-info{font-size:11px;color:var(--muted);}
+.dice-info span{display:block;font-size:9px;letter-spacing:1px;opacity:0.6;}
+.dice-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.db{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;padding:7px 0;border-radius:10px;border:1px solid rgba(251,191,36,0.25);background:rgba(251,191,36,0.06);color:#fde68a;cursor:pointer;flex:1;min-width:36px;text-align:center;transition:all 0.12s;position:relative;overflow:hidden;}
+.db:active{transform:scale(0.9);background:rgba(251,191,36,0.18);}
+.db.last-rolled{border-color:#fbbf24;background:rgba(251,191,36,0.14);}
+.db .ripple{position:absolute;border-radius:50%;background:rgba(251,191,36,0.3);transform:scale(0);animation:ripple 0.4s linear;pointer-events:none;}
+@keyframes ripple{to{transform:scale(4);opacity:0;}}
+
+.grid{flex:1;min-height:0;display:grid;gap:8px;}
+@media(orientation:portrait){
+  .grid.p2{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
+  .grid.p3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+  .grid.p4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+  .grid.p5{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;}
+  .grid.p6{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;}
+}
+@media(orientation:landscape){
+  .grid.p2{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
+  .grid.p3{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr;}
+  .grid.p4{grid-template-columns:1fr 1fr 1fr 1fr;grid-template-rows:1fr;}
+  .grid.p5{grid-template-columns:repeat(5,1fr);grid-template-rows:1fr;}
+  .grid.p6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;}
+}
+
+.card{background:var(--s2);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0;transition:opacity 0.3s;}
+.card.dead{opacity:0.35;}
+.card.dead::after{content:'SCONFITTO';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;letter-spacing:3px;color:rgba(239,68,68,0.9);background:rgba(0,0,0,0.5);border-radius:16px;z-index:20;}
+.card-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;opacity:0.28;font-size:clamp(70px,16cqh,150px);line-height:1;user-select:none;filter:drop-shadow(0 0 12px currentColor);}
+.card-accent{height:3px;flex-shrink:0;position:relative;z-index:1;}
+.card-head{display:flex;align-items:center;gap:7px;padding:6px 10px 3px;flex-shrink:0;position:relative;z-index:1;}
+.avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif;}
+.name-inp{flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:13px;font-weight:600;color:var(--text);font-family:'Space Grotesk',sans-serif;}
+.name-inp::placeholder{color:var(--muted);font-weight:400;}
+.x-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+.settings-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+.card-settings{display:none;flex-shrink:0;position:relative;z-index:5;background:rgba(0,0,0,0.45);padding:8px 10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.card-settings.on{display:block;}
+.cs-label{font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+.color-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.swatch{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform 0.12s,border-color 0.12s;flex-shrink:0;}
+.swatch:active{transform:scale(0.88);}
+.swatch.selected{border-color:white;}
+.mana-row{display:flex;gap:6px;flex-wrap:wrap;}
+.mana-btn{flex:1;min-width:36px;padding:5px 2px;border-radius:8px;border:1px solid var(--border2);background:var(--s3);font-size:16px;cursor:pointer;text-align:center;transition:all 0.12s;}
+.mana-btn:active{transform:scale(0.88);}
+.mana-btn.selected{border-color:white;background:rgba(255,255,255,0.1);}
+
+.life-tap{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;position:relative;cursor:pointer;user-select:none;-webkit-user-select:none;z-index:1;}
+.tap-minus,.tap-plus{position:relative;display:flex;align-items:center;justify-content:center;transition:background 0.12s;}
+.tap-minus:active{background:rgba(248,113,113,0.1);}
+.tap-plus:active{background:rgba(74,222,128,0.1);}
+.tap-minus::before,.tap-plus::before{font-size:clamp(10px,2.5vw,16px);color:var(--muted);opacity:0.45;pointer-events:none;position:absolute;top:50%;transform:translateY(-50%);}
+.tap-minus::before{content:'−';left:8px;}
+.tap-plus::before{content:'+';right:8px;}
+.life-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.life-num{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1;font-size:var(--life-fs,clamp(40px,14cqh,120px));}
+.life-num.pop-minus{animation:popM 0.2s ease-out;}
+.life-num.pop-plus{animation:popP 0.2s ease-out;}
+@keyframes popM{0%{transform:scale(1);}50%{transform:scale(1.22);color:#f87171;}100%{transform:scale(1);}}
+@keyframes popP{0%{transform:scale(1);}50%{transform:scale(1.22);color:#4ade80;}100%{transform:scale(1);}}
+.life-delta{font-family:'Space Grotesk',sans-serif;font-size:clamp(14px,4vw,26px);font-weight:700;opacity:0;margin-top:3px;transition:opacity 0.1s;}
+.life-delta.show{opacity:1;}
+.life-sub{font-size:9px;font-weight:500;letter-spacing:2px;color:var(--muted);margin-top:3px;}
+.tap-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);letter-spacing:1px;opacity:0.45;pointer-events:none;white-space:nowrap;}
+.counters{display:flex;align-items:center;gap:5px;padding:3px 8px 8px;flex-shrink:0;position:relative;z-index:1;}
+.dots-wrap{display:flex;gap:3px;align-items:center;}
+.dot,.edot{width:clamp(7px,2vw,11px);height:clamp(7px,2vw,11px);border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.12s;flex-shrink:0;}
+.dot{border-radius:50%;}
+.edot{border-radius:2px;}
+.dot.on{background:#a78bfa;border-color:#a78bfa;}
+.edot.on{background:#fbbf24;border-color:#fbbf24;}
+.c-icon{font-size:11px;flex-shrink:0;}
+.c-spacer{flex:1;}
+</style>
+</head>
+<body>
+
+<div class="top-wrap" id="topWrap">
+  <div class="topbar">
+    <div class="logo">⚡ MAGIC SCORE</div>
+    <div class="wake-dot off" id="wakeDot"></div>
+    <button class="tb-btn" id="diceToggleBtn" onclick="toggleDice()">🎲 Dado</button>
+    <button class="tb-btn" onclick="undoLast()">↩</button>
+    <button class="tb-btn" onclick="resetAll()">Nuova</button>
+  </div>
+  <div class="strip">
+    <button class="sp-btn on" id="b20" onclick="setLife(20)">20 PV</button>
+    <button class="sp-btn" id="b30" onclick="setLife(30)">30 PV</button>
+    <button class="sp-btn" id="b40" onclick="setLife(40)">40 PV</button>
+    <button class="sp-btn" id="b60" onclick="setLife(60)">60 PV</button>
+    <button class="sp-btn" id="b100" onclick="setLife(100)">100 PV</button>
+    <button class="sp-btn" onclick="addPlayer()">＋ Giocatore</button>
+  </div>
+</div>
+
+<div class="toggle-handle" id="toggleHandle" onclick="toggleTop()">
+  <svg id="toggleArrow" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>
+</div>
+
+<div class="arena">
+  <div class="winner" id="winBox">
+    <div class="winner-label">VINCITORE</div>
+    <div class="winner-name" id="winName"></div>
+  </div>
+  <div class="dice-panel" id="dicePanel">
+    <div class="dice-top">
+      <div class="dice-result-wrap">
+        <div class="dice-result" id="diceResult">—</div>
+        <div class="dice-info">
+          <span id="diceLabel">Tira un dado</span>
+          <span id="diceType"></span>
+        </div>
+      </div>
+    </div>
+    <div class="dice-btns">
+      <button class="db" onclick="rollDice(2,this)">D2</button>
+      <button class="db" onclick="rollDice(3,this)">D3</button>
+      <button class="db" onclick="rollDice(4,this)">D4</button>
+      <button class="db" onclick="rollDice(6,this)">D6</button>
+      <button class="db" onclick="rollDice(10,this)">D10</button>
+      <button class="db" onclick="rollDice(20,this)">D20</button>
+    </div>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+let wakeLock=null;
+async function requestWake(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');document.getElementById('wakeDot').classList.remove('off');wakeLock.addEventListener('release',()=>document.getElementById('wakeDot').classList.add('off'));}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWake();});
+requestWake();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+let topVisible=true;
+function toggleTop(){
+  topVisible=!topVisible;
+  const wrap=document.getElementById('topWrap');
+  const arrow=document.getElementById('toggleArrow');
+  if(topVisible){wrap.style.maxHeight=wrap.scrollHeight+'px';wrap.classList.remove('collapsed');arrow.classList.remove('flipped');}
+  else{wrap.style.maxHeight=wrap.scrollHeight+'px';requestAnimationFrame(()=>wrap.classList.add('collapsed'));arrow.classList.add('flipped');}
+}
+window.addEventListener('DOMContentLoaded',()=>{const wrap=document.getElementById('topWrap');wrap.style.maxHeight=wrap.scrollHeight+'px';});
+
+let diceVisible=false;
+function toggleDice(){diceVisible=!diceVisible;document.getElementById('dicePanel').classList.toggle('on',diceVisible);document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);}
+function rollDice(sides,btn){
+  const r=document.createElement('span');r.className='ripple';r.style.cssText='width:60px;height:60px;left:50%;top:50%;margin-left:-30px;margin-top:-30px;';btn.appendChild(r);setTimeout(()=>r.remove(),500);
+  document.querySelectorAll('.db').forEach(b=>b.classList.remove('last-rolled'));btn.classList.add('last-rolled');
+  const result=document.getElementById('diceResult'),label=document.getElementById('diceLabel'),type=document.getElementById('diceType');
+  let ticks=0;
+  const iv=setInterval(()=>{result.textContent=Math.ceil(Math.random()*sides);if(++ticks>=8){clearInterval(iv);const f=Math.ceil(Math.random()*sides);result.textContent=f;result.classList.remove('rolling');void result.offsetWidth;result.classList.add('rolling');label.textContent=f===20&&sides===20?'🎉 Critico!':f===1&&sides===20?'💀 Fallimento!':'Risultato';type.textContent='D'+sides;}},40);
+}
+
+const PALETTE=[
+  {bar:'#f87171',bg:'rgba(248,113,113,0.15)',text:'#fca5a5'},
+  {bar:'#60a5fa',bg:'rgba(96,165,250,0.15)',text:'#93c5fd'},
+  {bar:'#f9fafb',bg:'rgba(249,250,251,0.12)',text:'#f9fafb'},
+  {bar:'#1a1a1a',bg:'rgba(80,70,60,0.25)',text:'#b8a898'},
+  {bar:'#4ade80',bg:'rgba(74,222,128,0.15)',text:'#86efac'},
+  {bar:'#c084fc',bg:'rgba(192,132,252,0.15)',text:'#e9d5ff'},
+  {bar:'#fbbf24',bg:'rgba(251,191,36,0.15)',text:'#fde68a'},
+  {bar:'#34d399',bg:'rgba(52,211,153,0.15)',text:'#6ee7b7'},
+];
+const MANA=[
+  {id:'W',emoji:'☀️',label:'Bianco'},{id:'U',emoji:'💧',label:'Blu'},
+  {id:'B',emoji:'💀',label:'Nero'},{id:'R',emoji:'🔥',label:'Rosso'},
+  {id:'G',emoji:'🌲',label:'Verde'},{id:'C',emoji:'💎',label:'Incolore'},
+];
+
+let startLife=20,players=[],history=[],uid=0;
+const pending={};
+
+function mkP(name,ci){return{id:uid++,name,life:startLife,poison:0,energy:0,dead:false,colorIdx:ci%PALETTE.length,manaIdx:ci%MANA.length,settingsOpen:false};}
+function init(){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];history=[];render();}
+function addPlayer(){if(players.length>=6)return;players.push(mkP('Giocatore '+(players.length+1),players.length));render();}
+function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);render();}
+function resetAll(){players.forEach(p=>{p.life=startLife;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
+function setLife(n){startLife=n;document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('on'));document.getElementById('b'+n)?.classList.add('on');players.forEach(p=>{p.life=n;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
+
+function changeLife(id,delta){
+  const p=players.find(x=>x.id===id);if(!p)return;
+  if(!pending[id])pending[id]={delta:0,oldLife:p.life};
+  pending[id].delta+=delta;
+  p.life=Math.max(0,pending[id].oldLife+pending[id].delta);
+  if(p.life===0)p.dead=true;
+  if(p.life>0&&p.dead&&p.poison<10)p.dead=false;
+  updateCardDisplay(p,pending[id].delta,true);
+  clearTimeout(pending[id].timer);
+  pending[id].timer=setTimeout(()=>{
+    const acc=pending[id];
+    history.unshift({id,name:p.name||'?',delta:acc.delta,oldLife:acc.oldLife,newLife:p.life});
+    if(history.length>40)history.pop();
+    delete pending[id];
+    const ld=document.getElementById('ld'+id);
+    if(ld){clearTimeout(ld._t);ld._t=setTimeout(()=>ld.classList.remove('show'),700);}
+    checkWinner();
+  },1000);
+}
+
+function updateCardDisplay(p,delta,accumulating=false){
+  const lifeColor=p.life<=5?'#f87171':p.life<=10?'#fbbf24':'var(--text)';
+  const ln=document.getElementById('ln'+p.id);
+  if(ln){ln.textContent=p.life;ln.style.color=lifeColor;ln.classList.remove('pop-minus','pop-plus');void ln.offsetWidth;ln.classList.add(delta<0?'pop-minus':'pop-plus');setTimeout(()=>ln.classList.remove('pop-minus','pop-plus'),220);}
+  const ld=document.getElementById('ld'+p.id);
+  if(ld){const s=delta>0?'+':'';ld.textContent=s+delta;ld.style.color=delta<0?'#f87171':'#4ade80';ld.classList.add('show');if(!accumulating){clearTimeout(ld._t);ld._t=setTimeout(()=>ld.classList.remove('show'),700);}}
+  const card=document.querySelector('.card[data-id="'+p.id+'"]');
+  if(card)card.classList.toggle('dead',p.dead);
+  checkWinner();
+}
+
+function setPoison(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.poison=n;if(p.poison>=10)p.dead=true;checkWinner();render();}
+function setEnergy(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.energy=n;render();}
+function updateName(id,v){const p=players.find(x=>x.id===id);if(p)p.name=v;}
+function undoLast(){if(!history.length)return;const h=history.shift();const p=players.find(x=>x.id===h.id);if(p){p.life=h.oldLife;p.dead=p.life<=0||p.poison>=10;}checkWinner();render();}
+function checkWinner(){const alive=players.filter(p=>!p.dead);const wb=document.getElementById('winBox');if(players.length>1&&alive.length===1){wb.classList.add('on');document.getElementById('winName').textContent=alive[0].name||'Giocatore';}else wb.classList.remove('on');}
+function toggleSettings(id){const p=players.find(x=>x.id===id);if(!p)return;p.settingsOpen=!p.settingsOpen;players.forEach(q=>{if(q.id!==id)q.settingsOpen=false;});render();}
+function setColor(id,ci){const p=players.find(x=>x.id===id);if(!p)return;p.colorIdx=ci;render();}
+function setMana(id,mi){const p=players.find(x=>x.id===id);if(!p)return;p.manaIdx=mi;render();}
+
+function render(){
+  const grid=document.getElementById('grid');
+  grid.className='grid p'+players.length;
+  const fs={2:'clamp(56px,18cqh,160px)',3:'clamp(44px,14cqh,120px)',4:'clamp(36px,12cqh,100px)',5:'clamp(28px,10cqh,80px)',6:'clamp(24px,9cqh,72px)'};
+  document.documentElement.style.setProperty('--life-fs',fs[players.length]||fs[4]);
+  grid.innerHTML=players.map(p=>cardHTML(p)).join('');
+}
+
+function cardHTML(p){
+  const c=PALETTE[p.colorIdx],m=MANA[p.manaIdx];
+  const init=((p.name||'G').trim().split(' ').map(w=>w[0]).join('').slice(0,2)||'G').toUpperCase();
+  const lifeColor=p.life<=5?'#f87171':p.life<=10?'#fbbf24':'var(--text)';
+  const pdots=Array.from({length:10},(_,i)=>{const on=i<p.poison;return`<span class="dot${on?' on':''}" onclick="setPoison(${p.id},${on&&p.poison===i+1?i:i+1})"></span>`;}).join('');
+  const edots=Array.from({length:5},(_,i)=>{const on=i<p.energy;return`<span class="edot${on?' on':''}" onclick="setEnergy(${p.id},${on&&p.energy===i+1?i:i+1})"></span>`;}).join('');
+  const swatches=PALETTE.map((col,ci)=>`<span class="swatch${p.colorIdx===ci?' selected':''}" style="background:${col.bar};" onclick="setColor(${p.id},${ci})"></span>`).join('');
+  const manaButtons=MANA.map((mn,mi)=>`<button class="mana-btn${p.manaIdx===mi?' selected':''}" onclick="setMana(${p.id},${mi})" title="${mn.label}">${mn.emoji}</button>`).join('');
+  return`<div class="card${p.dead?' dead':''}" data-id="${p.id}" style="border-color:${p.settingsOpen?c.bar:'var(--border)'};">
+  <div class="card-bg" style="color:${c.bar};">${m.emoji}</div>
+  <div class="card-accent" style="background:${c.bar}"></div>
+  <div class="card-head">
+    <div class="avatar" style="background:${c.bg};color:${c.text}">${init}</div>
+    <input class="name-inp" value="${p.name}" placeholder="Nome..." oninput="updateName(${p.id},this.value)">
+    <button class="settings-btn" onclick="toggleSettings(${p.id})">⚙</button>
+    ${players.length>2?`<button class="x-btn" onclick="removePlayer(${p.id})">×</button>`:''}
+  </div>
+  <div class="card-settings${p.settingsOpen?' on':''}">
+    <div class="cs-label">COLORE</div>
+    <div class="color-row">${swatches}</div>
+    <div class="cs-label">SFONDO MANA</div>
+    <div class="mana-row">${manaButtons}</div>
+  </div>
+  <div class="life-tap">
+    <div class="tap-minus" onclick="changeLife(${p.id},-1)"></div>
+    <div class="tap-plus"  onclick="changeLife(${p.id},+1)"></div>
+    <div class="life-center">
+      <div class="life-num" id="ln${p.id}" style="color:${lifeColor}">${p.life}</div>
+      <div class="life-delta" id="ld${p.id}"></div>
+      <div class="life-sub">PUNTI VITA</div>
+      <div class="tap-hint">← −1 &nbsp;|&nbsp; +1 →</div>
+    </div>
+  </div>
+  <div class="counters">
+    <span class="c-icon">☠</span><div class="dots-wrap">${pdots}</div>
+    <div class="c-spacer"></div>
+    <div class="dots-wrap">${edots}</div><span class="c-icon">⚡</span>
+  </div>
+</div>`;
+}
+
+init();
+</script>
+</body>
+</html>
