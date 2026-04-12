@@ -325,8 +325,8 @@ function clearBgImage(id){ const p=players.find(x=>x.id===id); if(!p)return; p.b
 function setBgOpacity(id, val){ const p=players.find(x=>x.id===id); if(!p)return; p.bgOpacity=parseInt(val); const el=document.getElementById('img-bg-'+id); if(el)el.style.opacity=p.bgOpacity/100; }
 function handleImgUpload(id, input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>setBgImage(id,e.target.result); r.readAsDataURL(f); }
 function init(){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];history=[];render();}
-function addPlayer(){if(players.length>=6)return;players.push(mkP('Giocatore '+(players.length+1),players.length));render();}
-function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);render();}
+function addPlayer(){if(players.length>=6)return;const usedMana=new Set(players.map(p=>p.manaIdx));const mi=MANA.findIndex((_,i)=>!usedMana.has(i));players.push(mkP('Giocatore '+(players.length+1),mi>=0?mi:uid%MANA.length));render();}
+function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);history=history.filter(h=>h.id!==id);delete pending[id];render();}
 function resetAll(){players.forEach(p=>{p.life=startLife;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
 function setLife(n){startLife=n;document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('on'));document.getElementById('b'+n)?.classList.add('on');players.forEach(p=>{p.life=n;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
 
@@ -365,11 +365,11 @@ function updateCardDisplay(p,delta,accumulating=false){
 
 function setPoison(id,n){
   const p=players.find(x=>x.id===id);if(!p)return;
-  p.poison=n;
+  p.poison=Math.max(0,Math.min(10,n));
   if(p.poison>=10){p.dead=true;soundDead();haptic('dead');}
   checkWinner();render();
 }
-function setEnergy(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.energy=n;render();}
+function setEnergy(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.energy=Math.max(0,Math.min(5,n));render();}
 function updateName(id,v){const p=players.find(x=>x.id===id);if(p)p.name=v;}
 function undoLast(){if(!history.length)return;const h=history.shift();const p=players.find(x=>x.id===h.id);if(p){p.life=h.oldLife;p.dead=p.life<=0||p.poison>=10;}checkWinner();render();}
 
