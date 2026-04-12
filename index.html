@@ -277,13 +277,17 @@ function rollDice(sides,btn){
         soundDice(f,sides);
       });
       haptic('dice');
-      /* Nascondi dopo 2.5s */
+      /* Nascondi dopo 2.5s, vincitore/perdente restano 2s in più */
       setTimeout(()=>{
-        players.forEach(p=>{
-          const ov=document.getElementById('do'+p.id);
-          if(ov) ov.classList.remove('show');
+        players.forEach((p,i)=>{
+          const f=rolls[i];
+          const isHighlight=(f===maxRoll||f===minRoll)&&(minRoll!==maxRoll||players.length<2);
+          if(!isHighlight){const ov=document.getElementById('do'+p.id);if(ov)ov.classList.remove('show');}
         });
       },2500);
+      setTimeout(()=>{
+        players.forEach(p=>{const ov=document.getElementById('do'+p.id);if(ov)ov.classList.remove('show');});
+      },4500);
     }
   },50);
 }
