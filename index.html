@@ -85,6 +85,16 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .card.dead{opacity:0.35;}
 .card.dead::after{content:'SCONFITTO';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;letter-spacing:3px;color:rgba(239,68,68,0.9);background:rgba(0,0,0,0.5);border-radius:16px;z-index:20;}
 .card-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;opacity:0.28;font-size:clamp(70px,16cqh,150px);line-height:1;user-select:none;filter:drop-shadow(0 0 12px currentColor);}
+.card-img-bg{position:absolute;inset:0;background-size:cover;background-position:center;border-radius:16px;z-index:0;pointer-events:none;}
+.img-upload-label{display:flex;align-items:center;gap:7px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px dashed var(--border2);color:var(--muted);font-size:11px;font-weight:500;transition:all 0.15s;margin-top:4px;}
+.img-upload-label:active{opacity:0.6;}
+.img-upload-label.has-img{border-color:var(--accent);color:var(--accent2);}
+.img-upload-label input{display:none;}
+.img-opacity-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.img-opacity-row input[type=range]{flex:1;accent-color:var(--accent);}
+.img-opacity-row span{font-size:10px;color:var(--muted);min-width:28px;text-align:right;}
+.img-clear-btn{font-size:10px;padding:3px 8px;border-radius:8px;border:1px solid rgba(248,113,113,0.35);background:transparent;color:#f87171;cursor:pointer;}
+.img-clear-btn:active{opacity:0.6;}
 .card-accent{height:3px;flex-shrink:0;position:relative;z-index:1;}
 .card-head{display:flex;align-items:center;gap:7px;padding:6px 10px 3px;flex-shrink:0;position:relative;z-index:1;}
 .avatar{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif;}
@@ -280,7 +290,12 @@ const MANA=[
 let startLife=20,players=[],history=[],uid=0;
 const pending={};
 
-function mkP(name,ci){return{id:uid++,name,life:startLife,poison:0,energy:0,dead:false,colorIdx:ci%PALETTE.length,manaIdx:ci%MANA.length,settingsOpen:false};}
+function mkP(name,ci){return{id:uid++,name,life:startLife,poison:0,energy:0,dead:false,colorIdx:ci%PALETTE.length,manaIdx:ci%MANA.length,settingsOpen:false,bgImage:null,bgOpacity:60};}
+
+function setBgImage(id, dataUrl){ const p=players.find(x=>x.id===id); if(!p)return; p.bgImage=dataUrl; render(); }
+function clearBgImage(id){ const p=players.find(x=>x.id===id); if(!p)return; p.bgImage=null; render(); }
+function setBgOpacity(id, val){ const p=players.find(x=>x.id===id); if(!p)return; p.bgOpacity=parseInt(val); const el=document.getElementById('img-bg-'+id); if(el)el.style.opacity=p.bgOpacity/100; }
+function handleImgUpload(id, input){ const f=input.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>setBgImage(id,e.target.result); r.readAsDataURL(f); }
 function init(){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];history=[];render();}
 function addPlayer(){if(players.length>=6)return;players.push(mkP('Giocatore '+(players.length+1),players.length));render();}
 function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);render();}
@@ -381,7 +396,8 @@ function cardHTML(p){
   const swatches=PALETTE.map((col,ci)=>`<span class="swatch${p.colorIdx===ci?' selected':''}" style="background:${col.bar};" onclick="setColor(${p.id},${ci})"></span>`).join('');
   const manaButtons=MANA.map((mn,mi)=>`<button class="mana-btn${p.manaIdx===mi?' selected':''}" onclick="setMana(${p.id},${mi})" title="${mn.label}">${mn.emoji}</button>`).join('');
   return`<div class="card${p.dead?' dead':''}" data-id="${p.id}" style="border-color:${p.settingsOpen?c.bar:'var(--border)'};">
-  <div class="card-bg" style="color:${c.bar};">${m.emoji}</div>
+  ${p.bgImage?`<div class="card-img-bg" id="img-bg-${p.id}" style="background-image:url('${p.bgImage}');opacity:${p.bgOpacity/100};"></div>`:''}
+  <div class="card-bg" style="color:${c.bar};${p.bgImage?'opacity:0.08;':''}">${m.emoji}</div>
   <div class="card-accent" style="background:${c.bar}"></div>
   <div class="card-head">
     <div class="avatar" style="background:${c.bg};color:${c.text}">${init}</div>
@@ -394,6 +410,18 @@ function cardHTML(p){
     <div class="color-row">${swatches}</div>
     <div class="cs-label">SFONDO MANA</div>
     <div class="mana-row">${manaButtons}</div>
+    <div class="cs-label" style="margin-top:8px;">IMMAGINE SFONDO</div>
+    <label class="img-upload-label${p.bgImage?' has-img':''}">
+      <input type="file" accept="image/*" onchange="handleImgUpload(${p.id},this)">
+      ${p.bgImage?'🖼 Cambia immagine':'📁 Carica immagine'}
+    </label>
+    ${p.bgImage?`
+    <div class="img-opacity-row">
+      <span style="font-size:10px;color:var(--muted);">Opacità</span>
+      <input type="range" min="10" max="100" value="${p.bgOpacity}" oninput="setBgOpacity(${p.id},this.value)">
+      <span>${p.bgOpacity}%</span>
+    </div>
+    <button class="img-clear-btn" onclick="clearBgImage(${p.id})">✕ Rimuovi</button>`:''}
   </div>
   <div class="life-tap">
     <div class="tap-minus" onclick="changeLife(${p.id},-1)"></div>
