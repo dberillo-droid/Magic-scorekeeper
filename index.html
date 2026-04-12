@@ -62,6 +62,8 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .dice-overlay-num{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1;color:#fbbf24;font-size:var(--life-fs,clamp(40px,14cqh,120px));}
 .dice-overlay-num.crit{color:#4ade80;}
 .dice-overlay-num.fail{color:#f87171;}
+.dice-overlay-num.best{color:#a78bfa;}
+.dice-overlay-num.worst{color:#fb923c;}
 .dice-overlay-label{font-size:10px;letter-spacing:2px;color:rgba(251,191,36,0.7);margin-top:6px;font-weight:600;}
 .dice-overlay-num.rolling-anim{animation:diceAnim 0.35s ease-out;}
 
@@ -261,6 +263,7 @@ function rollDice(sides,btn){
     });
     if(++ticks>=10){
       clearInterval(iv);
+      const minRoll=Math.min(...rolls), maxRoll=Math.max(...rolls);
       players.forEach((p,i)=>{
         const f=rolls[i];
         const num=document.getElementById('don'+p.id);
@@ -268,9 +271,12 @@ function rollDice(sides,btn){
         const ov=document.getElementById('do'+p.id);
         if(!num||!ov) return;
         num.textContent=f;
-        num.className='dice-overlay-num'+(f===20&&sides===20?' crit':f===1&&sides===20?' fail':'');
+        const isCrit=f===20&&sides===20, isFail=f===1&&sides===20;
+        const isMax=!isCrit&&f===maxRoll&&(players.length<2||minRoll!==maxRoll);
+        const isMin=!isFail&&f===minRoll&&(players.length<2||minRoll!==maxRoll);
+        num.className='dice-overlay-num'+(isCrit?' crit':isFail?' fail':isMax?' best':isMin?' worst':'');
         num.classList.remove('rolling-anim'); void num.offsetWidth; num.classList.add('rolling-anim');
-        if(lbl) lbl.textContent=f===20&&sides===20?'CRITICO!':f===1&&sides===20?'FALLIMENTO':'D'+sides;
+        if(lbl) lbl.textContent=isCrit?'CRITICO!':isFail?'FALLIMENTO':isMax?'IL MIGLIORE':isMin?'IL PEGGIORE':'D'+sides;
         soundDice(f,sides);
       });
       haptic('dice');
