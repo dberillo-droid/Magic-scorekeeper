@@ -49,21 +49,21 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .winner-label{font-size:9px;letter-spacing:2px;color:var(--accent2);font-weight:600;}
 .winner-name{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;}
 @keyframes wglow{from{border-color:rgba(124,111,255,0.2);}to{border-color:rgba(124,111,255,0.9);}}
-.dice-panel{display:none;flex-shrink:0;background:var(--s1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:10px 12px;}
+.dice-panel{display:none;flex-shrink:0;background:var(--s1);border:1px solid rgba(251,191,36,0.2);border-radius:14px;padding:8px 12px;}
 .dice-panel.on{display:block;}
-.dice-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.dice-result-wrap{flex:1;display:flex;align-items:center;gap:8px;}
-.dice-result{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:#fbbf24;line-height:1;min-width:40px;text-align:center;}
-.dice-result.rolling{animation:diceAnim 0.4s ease-out;}
-@keyframes diceAnim{0%{transform:rotate(-15deg) scale(0.8);opacity:0.3;}40%{transform:rotate(8deg) scale(1.25);}70%{transform:rotate(-4deg) scale(1.1);}100%{transform:none;}}
-.dice-info{font-size:11px;color:var(--muted);}
-.dice-info span{display:block;font-size:9px;letter-spacing:1px;opacity:0.6;}
 .dice-btns{display:flex;gap:6px;flex-wrap:wrap;}
 .db{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;padding:7px 0;border-radius:10px;border:1px solid rgba(251,191,36,0.25);background:rgba(251,191,36,0.06);color:#fde68a;cursor:pointer;flex:1;min-width:36px;text-align:center;transition:all 0.12s;position:relative;overflow:hidden;}
 .db:active{transform:scale(0.9);background:rgba(251,191,36,0.18);}
 .db.last-rolled{border-color:#fbbf24;background:rgba(251,191,36,0.14);}
 .db .ripple{position:absolute;border-radius:50%;background:rgba(251,191,36,0.3);transform:scale(0);animation:ripple 0.4s linear;pointer-events:none;}
 @keyframes ripple{to{transform:scale(4);opacity:0;}}
+.dice-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;pointer-events:none;background:rgba(10,10,15,0.72);border-radius:16px;opacity:0;transition:opacity 0.15s;}
+.dice-overlay.show{opacity:1;}
+.dice-overlay-num{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1;color:#fbbf24;font-size:var(--life-fs,clamp(40px,14cqh,120px));}
+.dice-overlay-num.crit{color:#4ade80;}
+.dice-overlay-num.fail{color:#f87171;}
+.dice-overlay-label{font-size:10px;letter-spacing:2px;color:rgba(251,191,36,0.7);margin-top:6px;font-weight:600;}
+.dice-overlay-num.rolling-anim{animation:diceAnim 0.35s ease-out;}
 
 .grid{flex:1;min-height:0;display:grid;gap:8px;}
 @media(orientation:portrait){
@@ -170,15 +170,6 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
     <div class="winner-name" id="winName"></div>
   </div>
   <div class="dice-panel" id="dicePanel">
-    <div class="dice-top">
-      <div class="dice-result-wrap">
-        <div class="dice-result" id="diceResult">—</div>
-        <div class="dice-info">
-          <span id="diceLabel">Tira un dado</span>
-          <span id="diceType"></span>
-        </div>
-      </div>
-    </div>
     <div class="dice-btns">
       <button class="db" onclick="rollDice(2,this)">D2</button>
       <button class="db" onclick="rollDice(3,this)">D3</button>
@@ -250,23 +241,48 @@ function toggleTop(){
 window.addEventListener('DOMContentLoaded',()=>{const wrap=document.getElementById('topWrap');wrap.style.maxHeight=wrap.scrollHeight+'px';});
 
 let diceVisible=false;
+let currentDiceSides=20;
 function toggleDice(){diceVisible=!diceVisible;document.getElementById('dicePanel').classList.toggle('on',diceVisible);document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);}
+
 function rollDice(sides,btn){
+  currentDiceSides=sides;
   const r=document.createElement('span');r.className='ripple';r.style.cssText='width:60px;height:60px;left:50%;top:50%;margin-left:-30px;margin-top:-30px;';btn.appendChild(r);setTimeout(()=>r.remove(),500);
   document.querySelectorAll('.db').forEach(b=>b.classList.remove('last-rolled'));btn.classList.add('last-rolled');
-  const result=document.getElementById('diceResult'),label=document.getElementById('diceLabel'),type=document.getElementById('diceType');
+
+  /* Per ogni giocatore: anima il dado e mostra il risultato sulla carta */
+  const rolls=players.map(()=>Math.ceil(Math.random()*sides));
   let ticks=0;
   const iv=setInterval(()=>{
-    result.textContent=Math.ceil(Math.random()*sides);
-    if(++ticks>=8){
+    players.forEach(p=>{
+      const el=document.getElementById('don'+p.id);
+      if(el) el.textContent=Math.ceil(Math.random()*sides);
+      const ov=document.getElementById('do'+p.id);
+      if(ov) ov.classList.add('show');
+    });
+    if(++ticks>=10){
       clearInterval(iv);
-      const f=Math.ceil(Math.random()*sides);
-      result.textContent=f;result.classList.remove('rolling');void result.offsetWidth;result.classList.add('rolling');
-      label.textContent=f===20&&sides===20?'🎉 Critico!':f===1&&sides===20?'💀 Fallimento!':'Risultato';
-      type.textContent='D'+sides;
-      soundDice(f,sides); haptic('dice');
+      players.forEach((p,i)=>{
+        const f=rolls[i];
+        const num=document.getElementById('don'+p.id);
+        const lbl=document.getElementById('dol'+p.id);
+        const ov=document.getElementById('do'+p.id);
+        if(!num||!ov) return;
+        num.textContent=f;
+        num.className='dice-overlay-num'+(f===20&&sides===20?' crit':f===1&&sides===20?' fail':'');
+        num.classList.remove('rolling-anim'); void num.offsetWidth; num.classList.add('rolling-anim');
+        if(lbl) lbl.textContent=f===20&&sides===20?'CRITICO!':f===1&&sides===20?'FALLIMENTO':'D'+sides;
+        soundDice(f,sides);
+      });
+      haptic('dice');
+      /* Nascondi dopo 2.5s */
+      setTimeout(()=>{
+        players.forEach(p=>{
+          const ov=document.getElementById('do'+p.id);
+          if(ov) ov.classList.remove('show');
+        });
+      },2500);
     }
-  },40);
+  },50);
 }
 
 const PALETTE=[
@@ -394,7 +410,7 @@ function cardHTML(p){
   const swatches=PALETTE.map((col,ci)=>`<span class="swatch${p.colorIdx===ci?' selected':''}" style="background:${col.bar};" onclick="setColor(${p.id},${ci})"></span>`).join('');
   const manaButtons=MANA.map((mn,mi)=>`<button class="mana-btn${p.manaIdx===mi?' selected':''}" onclick="setMana(${p.id},${mi})" title="${mn.label}">${mn.emoji}</button>`).join('');
   return`<div class="card${p.dead?' dead':''}" data-id="${p.id}" style="border-color:${p.settingsOpen?c.bar:'var(--border)'};">
-  ${p.bgImage?`<div class="card-img-bg" id="img-bg-${p.id}" style="background-image:url('${p.bgImage}');opacity:${p.bgOpacity/100};"></div>`:''}
+  <div class="dice-overlay" id="do${p.id}"><div class="dice-overlay-num" id="don${p.id}"></div><div class="dice-overlay-label" id="dol${p.id}"></div></div>  ${p.bgImage?`<div class="card-img-bg" id="img-bg-${p.id}" style="background-image:url('${p.bgImage}');opacity:${p.bgOpacity/100};"></div>`:''}
   <div class="card-bg" style="color:${c.bar};${p.bgImage?'opacity:0.08;':''}">${m.emoji}</div>
   <div class="card-accent" style="background:${c.bar}"></div>
   <div class="card-head">
