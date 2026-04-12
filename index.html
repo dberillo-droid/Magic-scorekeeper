@@ -117,7 +117,7 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .life-num.pop-plus{animation:popP 0.2s ease-out;}
 @keyframes popM{0%{transform:scale(1);}50%{transform:scale(1.22);color:#f87171;}100%{transform:scale(1);}}
 @keyframes popP{0%{transform:scale(1);}50%{transform:scale(1.22);color:#4ade80;}100%{transform:scale(1);}}
-.life-delta{font-family:'Space Grotesk',sans-serif;font-size:clamp(14px,4vw,26px);font-weight:700;opacity:0;margin-top:3px;transition:opacity 0.1s;}
+.life-delta{font-family:'Space Grotesk',sans-serif;font-weight:700;opacity:0;margin-top:3px;transition:opacity 0.1s;font-size:var(--delta-fs,clamp(14px,4vw,26px));}
 .life-delta.show{opacity:1;}
 .life-sub{font-size:9px;font-weight:500;letter-spacing:2px;color:var(--muted);margin-top:3px;}
 .tap-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);letter-spacing:1px;opacity:0.45;pointer-events:none;white-space:nowrap;}
@@ -346,9 +346,29 @@ function setMana(id,mi){const p=players.find(x=>x.id===id);if(!p)return;p.manaId
 
 function render(){
   const grid=document.getElementById('grid');
-  grid.className='grid p'+players.length;
-  const fs={2:'clamp(56px,18cqh,160px)',3:'clamp(44px,14cqh,120px)',4:'clamp(36px,12cqh,100px)',5:'clamp(28px,10cqh,80px)',6:'clamp(24px,9cqh,72px)'};
-  document.documentElement.style.setProperty('--life-fs',fs[players.length]||fs[4]);
+  const n=players.length;
+  grid.className='grid p'+n;
+
+  /* Font sizes per numero di giocatori.
+     Con 2 giocatori usiamo valori molto grandi per il numero di vita
+     e un delta proporzionalmente più grande. */
+  const fs={
+    2:'clamp(80px,22cqh,220px)',
+    3:'clamp(44px,14cqh,120px)',
+    4:'clamp(36px,12cqh,100px)',
+    5:'clamp(28px,10cqh,80px)',
+    6:'clamp(24px,9cqh,72px)'
+  };
+  const dfs={
+    2:'clamp(22px,6vw,46px)',
+    3:'clamp(14px,4vw,26px)',
+    4:'clamp(12px,3.5vw,22px)',
+    5:'clamp(11px,3vw,18px)',
+    6:'clamp(10px,2.5vw,16px)'
+  };
+  document.documentElement.style.setProperty('--life-fs', fs[n]||fs[4]);
+  document.documentElement.style.setProperty('--delta-fs', dfs[n]||dfs[4]);
+
   grid.innerHTML=players.map(p=>cardHTML(p)).join('');
 }
 
