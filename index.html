@@ -27,11 +27,11 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 
 .top-wrap{flex-shrink:0;overflow:hidden;transition:max-height 0.32s cubic-bezier(.4,0,.2,1);}
 .top-wrap.collapsed{max-height:0!important;}
-.topbar{display:flex;align-items:center;gap:8px;padding:calc(var(--safe-top) + 6px) calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);}
-.logo{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.5px;flex:1;}
+.topbar{display:flex;align-items:center;gap:6px;padding:calc(var(--safe-top) + 6px) calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.topbar::-webkit-scrollbar{display:none;}
 .wake-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;flex-shrink:0;transition:all 0.3s;}
 .wake-dot.off{background:var(--muted);box-shadow:none;}
-.tb-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;white-space:nowrap;}
+.tb-btn{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:rgba(255,255,255,0.55);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .tb-btn:active{opacity:0.6;transform:scale(0.95);}
 .tb-btn.on{background:rgba(251,191,36,0.12);border-color:#fbbf24;color:#fbbf24;}
 .strip{display:flex;gap:6px;padding:6px calc(var(--safe-right) + 10px) 6px calc(var(--safe-left) + 10px);background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
@@ -146,20 +146,18 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 
 <div class="top-wrap" id="topWrap">
   <div class="topbar">
-    <div class="logo">⚡ MAGIC SCORE</div>
     <div class="wake-dot off" id="wakeDot"></div>
-    <button class="tb-btn" id="diceToggleBtn" onclick="toggleDice()">🎲 Dado</button>
-    <button class="tb-btn" onclick="undoLast()">↩</button>
-    <button class="tb-btn" onclick="resetAll()">Nuova</button>
-  </div>
-  <div class="strip">
     <button class="sp-btn on" id="b20" onclick="setLife(20)">20 PV</button>
     <button class="sp-btn" id="b30" onclick="setLife(30)">30 PV</button>
     <button class="sp-btn" id="b40" onclick="setLife(40)">40 PV</button>
     <button class="sp-btn" id="b60" onclick="setLife(60)">60 PV</button>
-    <button class="sp-btn" id="b100" onclick="setLife(100)">100 PV</button>
-    <button class="sp-btn" onclick="addPlayer()">＋ Giocatore</button>
+    <div style="flex:1"></div>
+    <button class="tb-btn" id="diceToggleBtn" onclick="toggleDice()">🎲 Dado</button>
+    <button class="tb-btn" onclick="undoLast()">↩</button>
+    <button class="tb-btn" onclick="resetAll()">Nuova</button>
+    <button class="tb-btn" onclick="addPlayer()">＋</button>
   </div>
+  <div class="strip" style="display:none"></div>
 </div>
 
 <div class="toggle-handle" id="toggleHandle" onclick="toggleTop()">
