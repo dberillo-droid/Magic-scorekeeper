@@ -419,7 +419,10 @@ async function showCard(exactName){
   }catch(e){res.innerHTML='<div class="cs-error">Errore di rete. Controlla la connessione.</div>';}
 }
 
-function init(){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];history=[];render();}
+const STORAGE_KEY='magic_scorekeeper_v1';
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({startLife,players:players.map(p=>({id:p.id,name:p.name,life:p.life,poison:p.poison,energy:p.energy,dead:p.dead,colorIdx:p.colorIdx,manaIdx:p.manaIdx,bgImage:p.bgImage,bgOpacity:p.bgOpacity}))}));}catch(e){}}
+function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const s=JSON.parse(raw);if(!s.players||!s.players.length)return false;startLife=s.startLife||20;uid=Math.max(...s.players.map(p=>p.id))+1;players=s.players.map(p=>({...p,settingsOpen:false}));return true;}catch(e){return false;}}
+function init(){if(!loadState()){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];}history=[];render();}
 function addPlayer(){if(players.length>=6)return;const usedMana=new Set(players.map(p=>p.manaIdx));const mi=MANA.findIndex((_,i)=>!usedMana.has(i));players.push(mkP('Giocatore '+(players.length+1),mi>=0?mi:uid%MANA.length));render();}
 function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);history=history.filter(h=>h.id!==id);delete pending[id];render();}
 function resetAll(){players.forEach(p=>{p.life=startLife;p.poison=0;p.energy=0;p.dead=false;});history=[];checkWinner();render();}
@@ -516,6 +519,7 @@ function render(){
   document.documentElement.style.setProperty('--delta-fs', dfs[n]||dfs[4]);
 
   grid.innerHTML=players.map(p=>cardHTML(p)).join('');
+  saveState();
 }
 
 function cardHTML(p){
