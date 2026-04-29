@@ -97,6 +97,7 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
   .grid.p4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
   .grid.p5{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;}
   .grid.p6{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;}
+  .grid.p2 .tap-minus::before,.grid.p2 .tap-plus::before{top:auto;bottom:22px;transform:none;}
 }
 @media(orientation:landscape){
   .grid.p2{grid-template-columns:1fr 1fr;grid-template-rows:1fr;}
@@ -502,14 +503,14 @@ function render(){
   document.documentElement.style.setProperty('--dot-gap', dotGap[n]||'3px');
   document.documentElement.style.setProperty('--dot-icon', dotIcon[n]||'11px');
   const fs={
-    2:'clamp(80px,22cqh,220px)',
+    2:isPortrait?'clamp(48px,12cqh,90px)':'clamp(80px,22cqh,220px)',
     3:'clamp(44px,14cqh,120px)',
     4:'clamp(36px,12cqh,100px)',
     5:'clamp(28px,10cqh,80px)',
     6:'clamp(24px,9cqh,72px)'
   };
   const dfs={
-    2:'clamp(22px,6vw,46px)',
+    2:isPortrait?'clamp(14px,4vw,26px)':'clamp(22px,6vw,46px)',
     3:'clamp(14px,4vw,26px)',
     4:'clamp(12px,3.5vw,22px)',
     5:'clamp(11px,3vw,18px)',
