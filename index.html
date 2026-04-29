@@ -143,9 +143,9 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .tap-minus,.tap-plus{position:relative;display:flex;align-items:center;justify-content:center;transition:background 0.12s;}
 .tap-minus:active{background:rgba(248,113,113,0.1);}
 .tap-plus:active{background:rgba(74,222,128,0.1);}
-.tap-minus::before,.tap-plus::before{font-size:clamp(10px,2.5vw,16px);color:var(--muted);opacity:0.45;pointer-events:none;position:absolute;top:50%;transform:translateY(-50%);}
-.tap-minus::before{content:'−';left:8px;}
-.tap-plus::before{content:'+';right:8px;}
+.tap-minus::before,.tap-plus::before{font-size:clamp(22px,5vw,36px);color:rgba(255,255,255,0.7);pointer-events:none;position:absolute;top:50%;transform:translateY(-50%);font-weight:300;}
+.tap-minus::before{content:'−';left:10px;}
+.tap-plus::before{content:'+';right:10px;}
 .life-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
 .life-num{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1;font-size:var(--life-fs,clamp(40px,14cqh,120px));}
 .life-num.pop-minus{animation:popM 0.2s ease-out;}
@@ -155,7 +155,6 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .life-delta{font-family:'Space Grotesk',sans-serif;font-weight:700;opacity:0;margin-top:3px;transition:opacity 0.1s;font-size:var(--delta-fs,clamp(14px,4vw,26px));}
 .life-delta.show{opacity:1;}
 .life-sub{font-size:9px;font-weight:500;letter-spacing:2px;color:var(--muted);margin-top:3px;}
-.tap-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);letter-spacing:1px;opacity:0.45;pointer-events:none;white-space:nowrap;}
 .counters{display:flex;align-items:center;gap:6px;padding:4px 10px 10px;flex-shrink:0;position:relative;z-index:1;flex-wrap:wrap;}
 .dots-wrap{display:flex;gap:var(--dot-gap,3px);align-items:center;flex-wrap:wrap;}
 .dot,.edot{width:var(--dot-size,9px);height:var(--dot-size,9px);border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.12s;flex-shrink:0;}
@@ -267,7 +266,7 @@ async function requestWake(){try{if('wakeLock' in navigator){wakeLock=await navi
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWake();});
 requestWake();
 
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistrations().then(regs=>{regs.forEach(r=>r.unregister());}); }
 
 let topVisible=true;
 function toggleTop(){
@@ -562,7 +561,6 @@ function cardHTML(p){
       <div class="life-num" id="ln${p.id}" style="color:${lifeColor}">${p.life}</div>
       <div class="life-delta" id="ld${p.id}"></div>
       <div class="life-sub">PUNTI VITA</div>
-      <div class="tap-hint">← −1 &nbsp;|&nbsp; +1 →</div>
     </div>
   </div>
   <div class="counters">
