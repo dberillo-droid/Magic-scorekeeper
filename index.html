@@ -446,6 +446,7 @@ function changeLife(id,delta){
     const ld=document.getElementById('ld'+id);
     if(ld){clearTimeout(ld._t);ld._t=setTimeout(()=>ld.classList.remove('show'),700);}
     checkWinner();
+    saveState();
   },1000);
 }
 
@@ -469,7 +470,7 @@ function setPoison(id,n){
   checkWinner();render();
 }
 function setEnergy(id,n){const p=players.find(x=>x.id===id);if(!p)return;p.energy=Math.max(0,Math.min(5,n));render();}
-function updateName(id,v){const p=players.find(x=>x.id===id);if(p)p.name=v;}
+function updateName(id,v){const p=players.find(x=>x.id===id);if(p){p.name=v;saveState();}}
 function undoLast(){if(!history.length)return;const h=history.shift();const p=players.find(x=>x.id===h.id);if(p){if(h.type==='poison'){p.poison=h.oldPoison;}else{p.life=h.oldLife;}p.dead=p.life<=0||p.poison>=10;}checkWinner();render();}
 
 function checkWinner(){
