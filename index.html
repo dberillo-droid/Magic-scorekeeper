@@ -38,6 +38,8 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .cs-close-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;align-self:flex-start;line-height:1;}
 .cs-result{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;}
 .cs-card-name{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--text);}
+.cs-card-sub{font-size:11px;color:var(--muted);margin-top:-4px;margin-bottom:2px;}
+.cs-list-item-sub{font-size:10px;color:var(--muted);}
 .cs-card-meta{font-size:11px;color:var(--muted);letter-spacing:0.5px;}
 .cs-oracle{background:var(--s3);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;}
 .cs-rulings-title{font-size:9px;letter-spacing:2px;color:var(--muted);font-weight:600;margin-top:4px;}
@@ -670,8 +672,14 @@ async function searchCard(){
 function renderCardList(cards,total){
   const MAX=30;const shown=cards.slice(0,MAX);
   const res=document.getElementById('csResult');
+  const ita=_csLang==='ita';
   res.innerHTML='<div class="cs-list-title">'+total+' CARTE TROVATE — SCEGLI</div>'
-    +'<div class="cs-list">'+shown.map(c=>'<div class="cs-list-item" onclick="showCard(\''+c.name.replace(/'/g,"\\'")+'\')"><div class="cs-list-item-name">'+c.name+'</div><div class="cs-list-item-meta">'+c.type_line+'</div></div>').join('')+'</div>'
+    +'<div class="cs-list">'+shown.map(c=>{
+      const displayName=ita?(c.printed_name||c.name):c.name;
+      const displayType=ita?(c.printed_type_line||c.type_line):c.type_line;
+      const subName=ita&&c.printed_name?'<div class="cs-list-item-sub">'+c.name+'</div>':'';
+      return '<div class="cs-list-item" onclick="showCard(\''+c.name.replace(/'/g,"\\'")+'\')"><div class="cs-list-item-name">'+displayName+'</div>'+subName+'<div class="cs-list-item-meta">'+displayType+'</div></div>';
+    }).join('')+'</div>'
     +(total>MAX?'<div class="cs-more">Mostrate '+MAX+' di '+total+' — affina la ricerca</div>':'');
 }
 
@@ -679,15 +687,23 @@ async function showCard(exactName){
   const res=document.getElementById('csResult');
   res.innerHTML='<div class="cs-loading">Caricamento...</div>';
   try{
-    const r=await fetch('https://api.scryfall.com/cards/named?exact='+encodeURIComponent(exactName));
+    /* in parallelo: carta inglese + stampa italiana (se ITA) */
+    const fetches=[fetch('https://api.scryfall.com/cards/named?exact='+encodeURIComponent(exactName))];
+    if(_csLang==='ita') fetches.push(fetch('https://api.scryfall.com/cards/search?q=!%22'+encodeURIComponent(exactName)+'%22+lang%3Ait&unique=prints'));
+    const [r,rIt]=await Promise.all(fetches);
     if(!r.ok){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
     const card=await r.json();
+    let itaPrint=null;
+    if(rIt?.ok){try{const j=await rIt.json();itaPrint=j.data?.[0]||null;}catch(e){}}
+    const displayName=itaPrint?.printed_name||card.name;
+    const displayType=itaPrint?.printed_type_line||card.type_line;
+    const subName=itaPrint?.printed_name?'<div class="cs-card-sub">'+card.name+'</div>':'';
     let rulingHTML='';
     try{const rr=await fetch(card.rulings_uri);const rulings=await rr.json();if(rulings.data&&rulings.data.length){rulingHTML='<div class="cs-rulings-title">REGOLE UFFICIALI</div>'+rulings.data.map(x=>'<div class="cs-ruling"><div class="cs-ruling-date">'+x.published_at+'</div>'+x.comment+'</div>').join('');}}catch(e){}
     const oracle=(card.oracle_text||'Nessun testo regole.').replace(/\{([^}]+)\}/g,'[$1]');
     const backBtn=document.getElementById('csInput').value.trim()?'<button class="cs-back-btn" onclick="searchCard()">← Risultati</button>':'';
     const gathererLink=card.related_uris?.gatherer?'<a class="cs-gatherer-link" href="'+card.related_uris.gatherer+'" target="_blank" rel="noopener">🔗 Apri su Gatherer</a>':'';
-    res.innerHTML=backBtn+'<div class="cs-card-name">'+card.name+'</div><div class="cs-card-meta">'+(card.mana_cost||'')+' · '+card.type_line+'</div><div class="cs-oracle">'+oracle+'</div>'+rulingHTML+gathererLink;
+    res.innerHTML=backBtn+'<div class="cs-card-name">'+displayName+'</div>'+subName+'<div class="cs-card-meta">'+(card.mana_cost||'')+' · '+displayType+'</div><div class="cs-oracle">'+oracle+'</div>'+rulingHTML+gathererLink;
   }catch(e){res.innerHTML='<div class="cs-error">Errore di rete. Controlla la connessione.</div>';}
 }
 
