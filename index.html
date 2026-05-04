@@ -511,6 +511,23 @@ function rollDice(sides,btn){
 
   const rolls=players.map(()=>Math.ceil(Math.random()*sides));
 
+  /* ── se la moneta è visibile e si clicca un dado diverso: pulisci subito ── */
+  if(sides!==2 && rollDice._coinBusy){
+    rollDice._coinBusy=false;
+    if(rollDice._coinTimer){clearTimeout(rollDice._coinTimer);rollDice._coinTimer=null;}
+    players.forEach(p=>{
+      const ov=document.getElementById('do'+p.id);
+      if(ov){
+        ov.classList.remove('show');
+        const oldCv=ov.querySelector('canvas');if(oldCv)oldCv.remove();
+        const num=document.getElementById('don'+p.id);
+        if(num){num.style.display='';num.textContent='';}
+        const lbl=document.getElementById('dol'+p.id);
+        if(lbl)lbl.textContent='';
+      }
+    });
+  }
+
   /* ── D2: animazione moneta ── */
   if(sides===2){
     if(rollDice._coinBusy)return; /* ignora click per tutta la durata overlay */
