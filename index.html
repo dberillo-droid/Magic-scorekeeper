@@ -540,7 +540,7 @@ function rollDice(sides,btn){
         }
       });
       rollDice._busy=false;
-    },10000); /* ~2.5s animazione + 7.5s persistenza risultato */
+    },9000); /* ~2.5s animazione + 6.5s persistenza risultato */
     return;
   }
 
@@ -579,11 +579,11 @@ function rollDice(sides,btn){
           const isHighlight=(f===maxRoll||f===minRoll)&&(minRoll!==maxRoll||players.length<2);
           if(!isHighlight){const ov=document.getElementById('do'+p.id);if(ov)ov.classList.remove('show');}
         });
-      },2500);
+      },1500);
       setTimeout(()=>{
         players.forEach(p=>{const ov=document.getElementById('do'+p.id);if(ov)ov.classList.remove('show');});
         rollDice._busy=false;
-      },4500);
+      },3500);
     }
   },50);
 }
