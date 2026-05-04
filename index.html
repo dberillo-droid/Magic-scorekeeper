@@ -305,7 +305,6 @@ function playCoinSound(){
 }
 
 function startCoinAnim(overlayEl, result, onDone){
-  playCoinSound();
   const SZ=220;
   const numEl=overlayEl.querySelector('.dice-overlay-num');
   /* rimuovi canvas residuo da lancio precedente */
@@ -526,6 +525,7 @@ function rollDice(sides,btn){
 
   /* ── D2: animazione moneta ── */
   if(sides===2){
+    playCoinSound(); /* audio parte subito */
     players.forEach((p,i)=>{
       const ov=document.getElementById('do'+p.id);
       const num=document.getElementById('don'+p.id);
@@ -534,10 +534,10 @@ function rollDice(sides,btn){
       ov.classList.add('show');
       if(num){num.textContent='';num.className='dice-overlay-num';}
       if(lbl)lbl.textContent='';
-      startCoinAnim(ov,rolls[i],()=>{
+      setTimeout(()=>startCoinAnim(ov,rolls[i],()=>{ /* animazione ritardata di 300ms */
         soundDice(rolls[i],sides);
         if(lbl)lbl.textContent=rolls[i]===1?'TESTA':'CROCE';
-      });
+      }),300);
     });
     haptic('dice');
     setTimeout(()=>{
