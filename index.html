@@ -631,24 +631,27 @@ async function searchCard(){
   const name=document.getElementById('csInput').value.trim();if(!name)return;
   const res=document.getElementById('csResult');
   res.innerHTML='<div class="cs-loading">Ricerca in corso...</div>';
+  const enc=encodeURIComponent(name);
   try{
-    const r=await fetch('https://api.scryfall.com/cards/search?q=name%3A%22'+encodeURIComponent(name)+'%22&unique=names&order=name');
-    if(!r.ok){
-      // nessun risultato con ricerca esatta, prova fuzzy su nome parziale
-      const r2=await fetch('https://api.scryfall.com/cards/search?q=name%3A'+encodeURIComponent(name)+'&unique=names&order=name');
-      if(!r2.ok){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
-      const j2=await r2.json();
-      if(!j2.data||!j2.data.length){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
-      if(j2.data.length===1){await showCard(j2.data[0].name);return;}
-      renderCardList(j2.data,j2.total_cards);return;
+    /* cerca in inglese (name:) e italiano (lang:it) in parallelo */
+    const [rEn,rIt]=await Promise.all([
+      fetch('https://api.scryfall.com/cards/search?q=name%3A%22'+enc+'%22&unique=names&order=name'),
+      fetch('https://api.scryfall.com/cards/search?q=lang%3Ait+%22'+enc+'%22&unique=names&order=name')
+    ]);
+    let cards=[],total=0;
+    if(rEn.ok){const j=await rEn.json();if(j.data?.length){cards=j.data;total=j.total_cards;}}
+    if(!cards.length&&rIt.ok){const j=await rIt.json();if(j.data?.length){cards=j.data;total=j.total_cards;}}
+    /* fallback: ricerca parziale inglese */
+    if(!cards.length){
+      const r2=await fetch('https://api.scryfall.com/cards/search?q=name%3A'+enc+'&unique=names&order=name');
+      if(r2.ok){const j=await r2.json();if(j.data?.length){cards=j.data;total=j.total_cards;}}
     }
-    const json=await r.json();
-    if(!json.data||!json.data.length){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
-    if(json.data.length===1){await showCard(json.data[0].name);return;}
-    // Se c'è un match esatto con il termine cercato, vai diretto a quella carta
-    const exactMatch=json.data.find(c=>c.name.toLowerCase()===name.toLowerCase());
+    if(!cards.length){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
+    if(cards.length===1){await showCard(cards[0].name);return;}
+    const nl=name.toLowerCase();
+    const exactMatch=cards.find(c=>c.name.toLowerCase()===nl||(c.printed_name&&c.printed_name.toLowerCase()===nl));
     if(exactMatch){await showCard(exactMatch.name);return;}
-    renderCardList(json.data,json.total_cards);
+    renderCardList(cards,total);
   }catch(e){res.innerHTML='<div class="cs-error">Errore di rete. Controlla la connessione.</div>';}
 }
 
