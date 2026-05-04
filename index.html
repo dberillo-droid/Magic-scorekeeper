@@ -280,15 +280,273 @@ window.addEventListener('DOMContentLoaded',()=>{const wrap=document.getElementBy
 
 let diceVisible=false;
 let currentDiceSides=20;
+/* pre-carica il path SVG del Planeswalker dal file locale */
+let _pwSvgPath=null;
+fetch('/planeswalker.svg').then(r=>r.text()).then(txt=>{const m=txt.match(/\sd="([^"]+)"/);if(m)_pwSvgPath=m[1];}).catch(()=>{});
 function toggleDice(){diceVisible=!diceVisible;document.getElementById('dicePanel').classList.toggle('on',diceVisible);document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);}
+
+/* pre-carica audio coin-flip */
+const _coinAudio=(()=>{try{const a=new Audio('/coin-flip.mp3');a.preload='auto';return a;}catch(e){return null;}})();
+function playCoinSound(){
+  try{
+    if(_coinAudio){_coinAudio.currentTime=0;_coinAudio.play().catch(()=>{});}
+  }catch(e){}
+}
+
+function startCoinAnim(overlayEl, result, onDone){
+  playCoinSound();
+  const SZ=220;
+  const numEl=overlayEl.querySelector('.dice-overlay-num');
+  /* rimuovi canvas residuo da lancio precedente */
+  const oldCv=overlayEl.querySelector('canvas');if(oldCv)oldCv.remove();
+  if(numEl){numEl.style.display='none';numEl.textContent='';}
+  const cv=document.createElement('canvas');
+  cv.width=SZ;cv.height=SZ;cv.style.cssText='display:block;flex-shrink:0;';
+  overlayEl.insertBefore(cv,numEl);
+
+  const gl=cv.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true})||cv.getContext('experimental-webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true});
+  if(!gl){cv.remove();if(numEl)numEl.style.display='';if(onDone)onDone();return()=>{};}
+
+  /* ── texture canvas (oro metallico) ── */
+  function mkTex(type){
+    const tc=document.createElement('canvas');tc.width=tc.height=256;
+    const cx=tc.getContext('2d');
+    cx.clearRect(0,0,256,256);
+    /* sfondo argento metallico */
+    const g=cx.createRadialGradient(88,80,4,128,128,115);
+    g.addColorStop(0,'#FFFFFF');
+    g.addColorStop(0.18,'#F0F0F0');
+    g.addColorStop(0.45,'#D0D0D0');
+    g.addColorStop(0.72,'#B0B0B0');
+    g.addColorStop(0.90,'#888888');
+    g.addColorStop(1,'#585858');
+    cx.fillStyle=g;cx.beginPath();cx.arc(128,128,115,0,6.2832);cx.fill();
+    /* shine diagonale */
+    const shine=cx.createLinearGradient(40,40,180,130);
+    shine.addColorStop(0,'rgba(255,255,255,0.45)');
+    shine.addColorStop(0.4,'rgba(220,220,220,0.12)');
+    shine.addColorStop(1,'rgba(0,0,0,0)');
+    cx.fillStyle=shine;cx.beginPath();cx.arc(128,128,115,0,6.2832);cx.fill();
+    /* bordo inciso */
+    cx.strokeStyle='rgba(255,255,255,0.5)';cx.lineWidth=4;
+    cx.beginPath();cx.arc(128,128,109,0,6.2832);cx.stroke();
+    cx.strokeStyle='rgba(0,0,0,0.3)';cx.lineWidth=2;
+    cx.beginPath();cx.arc(128,128,112,0,6.2832);cx.stroke();
+    if(type==='pw' && _pwSvgPath){
+      /* ── simbolo Planeswalker WM.svg (viewBox 0 0 457.94 823.54) — path singolo ── */
+      const sc=210/823.54;
+      const sw=457.94*sc;
+      const ox=(256-sw)/2, oy=(256-210)/2;
+      cx.save();
+      cx.translate(ox,oy);
+      cx.scale(sc,sc);
+      /* ombra */
+      cx.save();cx.translate(0.8/sc,0.8/sc);
+      cx.fillStyle='rgba(60,15,5,0.45)';
+      cx.fill(new Path2D(_pwSvgPath));
+      cx.restore();
+      /* simbolo #c03726 */
+      cx.fillStyle='#c03726';
+      cx.fill(new Path2D(_pwSvgPath));
+      /* highlight */
+      cx.save();cx.translate(-0.4/sc,-0.4/sc);
+      cx.fillStyle='rgba(255,180,140,0.18)';
+      cx.fill(new Path2D(_pwSvgPath));
+      cx.restore();
+      cx.restore();
+    }
+    const tex=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,tc);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    return tex;
+  }
+  const texT=mkTex('pw'), texC=mkTex('blank');
+
+  /* ── shaders ── */
+  const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,`
+    attribute vec3 aP;attribute vec3 aN;attribute float aFace;attribute vec2 aUV;
+    uniform mat4 uMVP;uniform mat3 uNM;
+    varying vec3 vN;varying float vFace;varying vec2 vUV;
+    void main(){gl_Position=uMVP*vec4(aP,1.0);vN=normalize(uNM*aN);vFace=aFace;vUV=aUV;}
+  `));
+  gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,`
+    precision mediump float;
+    varying vec3 vN;varying float vFace;varying vec2 vUV;
+    uniform sampler2D uTexFront;uniform sampler2D uTexBack;
+    void main(){
+      vec3 L=normalize(vec3(0.5,1.0,1.2));
+      vec3 V=normalize(vec3(0.0,0.15,1.0));
+      vec3 H=normalize(L+V);
+      float diff=max(dot(vN,L),0.0);
+      float spec=pow(max(dot(vN,H),0.0),90.0); /* speculare stretto = cromo */
+      float amb=0.42;
+      vec3 gSpec=vec3(0.95,0.97,1.0);            /* highlight argento freddo */
+      vec4 col;
+      if(vFace<0.5){
+        vec4 tex=texture2D(uTexFront,vUV);
+        col.rgb=tex.rgb*(amb+diff*0.62)+gSpec*spec*0.75;
+        col.a=tex.a;
+      }else if(vFace<1.5){
+        vec4 tex=texture2D(uTexBack,vUV);
+        col.rgb=tex.rgb*(amb+diff*0.62)+gSpec*spec*0.75;
+        col.a=tex.a;
+      }else{
+        /* bordo: argento metallico */
+        vec3 gDark=vec3(0.22,0.22,0.24);
+        vec3 gMid =vec3(0.72,0.74,0.78);
+        col.rgb=gDark*amb+gMid*diff*0.70+gSpec*spec*1.0;
+        col.a=1.0;
+      }
+      gl_FragColor=col;}
+  `));
+  gl.linkProgram(prog);gl.useProgram(prog);
+
+  /* ── geometria cilindro ── */
+  const SEG=48,R=0.72,TH=0.10;
+  const P=[],NV=[],FA=[],UV=[],I=[];
+  let vi=0;
+  const v=(x,y,z,nx,ny,nz,f,u,uv)=>{P.push(x,y,z);NV.push(nx,ny,nz);FA.push(f);UV.push(u,uv);return vi++;};
+  const PI2=6.28318530718;
+
+  /* faccia frontale: z=+TH, normale=(0,0,1), faceId=0 */
+  const fc=v(0,0,TH,0,0,1,0,0.5,0.5);
+  for(let i=0;i<SEG;i++){const a=i*PI2/SEG;v(R*Math.cos(a),R*Math.sin(a),TH,0,0,1,0,0.5+0.5*Math.cos(a),0.5-0.5*Math.sin(a));}
+  for(let i=0;i<SEG;i++)I.push(fc,fc+1+i,fc+1+(i+1)%SEG);
+
+  /* faccia posteriore: z=-TH, normale=(0,0,-1), faceId=1, winding inverso, UV speculare su U */
+  const bc=v(0,0,-TH,0,0,-1,1,0.5,0.5);
+  for(let i=0;i<SEG;i++){const a=i*PI2/SEG;v(R*Math.cos(a),R*Math.sin(a),-TH,0,0,-1,1,0.5-0.5*Math.cos(a),0.5-0.5*Math.sin(a));}
+  for(let i=0;i<SEG;i++)I.push(bc,bc+1+(i+1)%SEG,bc+1+i);
+
+  /* bordo laterale: faceId=2 */
+  for(let i=0;i<SEG;i++){
+    const a0=i*PI2/SEG,a1=(i+1)*PI2/SEG;
+    const c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+    const v0=v(R*c0,R*s0,TH,c0,s0,0,2,0,0);
+    const v1=v(R*c1,R*s1,TH,c1,s1,0,2,0,0);
+    const v2=v(R*c1,R*s1,-TH,c1,s1,0,2,0,0);
+    const v3=v(R*c0,R*s0,-TH,c0,s0,0,2,0,0);
+    I.push(v0,v1,v2,v0,v2,v3);
+  }
+
+  /* upload buffer */
+  const mkBuf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
+  const pB=mkBuf(new Float32Array(P));
+  const nB=mkBuf(new Float32Array(NV));
+  const fB=mkBuf(new Float32Array(FA));
+  const uB=mkBuf(new Float32Array(UV));
+  const iB=mkBuf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER);
+  const nIdx=I.length;
+
+  const aP=gl.getAttribLocation(prog,'aP');
+  const aN=gl.getAttribLocation(prog,'aN');
+  const aFace=gl.getAttribLocation(prog,'aFace');
+  const aUV=gl.getAttribLocation(prog,'aUV');
+  const uMVP=gl.getUniformLocation(prog,'uMVP');
+  const uNM=gl.getUniformLocation(prog,'uNM');
+  const uTF=gl.getUniformLocation(prog,'uTexFront');
+  const uTB=gl.getUniformLocation(prog,'uTexBack');
+
+  /* ── matrici column-major ── */
+  const mul=(a,b)=>{const r=new Float32Array(16);for(let c=0;c<4;c++)for(let rw=0;rw<4;rw++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+rw]*b[c*4+k];r[c*4+rw]=s;}return r;};
+  const rY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
+  const rX=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);};
+  const tr=(x,y,z)=>{const m=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);m[12]=x;m[13]=y;m[14]=z;return m;};
+  const persp=(fov,near,far)=>{const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);};
+  const m3=(m)=>new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);
+
+  /* ── animazione ── */
+  const TOTAL=150;
+  const finalA=result===1?0:Math.PI;
+  const startA=finalA-2.5*PI2;
+  const proj=persp(0.82,0.5,10.0);
+  const cam=tr(0,0,-3.2);
+  const tilt=rX(0.22); /* lieve inclinazione: vediamo la moneta dall'alto */
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);
+  gl.clearColor(0,0,0,0);
+
+  const bind=(b,loc,sz)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,sz,gl.FLOAT,false,0,0);};
+
+  let fr=0,alive=true;
+  (function draw(){
+    if(!alive)return;
+    const t=Math.min(fr/TOTAL,1);
+    const arcY=0.55*Math.sin(Math.PI*t);
+    const ease=1-Math.pow(1-t,5); /* forte ease-out: parte veloce, frena bruscamente alla fine */
+    const angle=startA+2.5*PI2*ease;
+    const model=mul(tr(0,arcY,0),mul(rY(angle),tilt));
+    const mvp=mul(proj,mul(cam,model));
+    gl.viewport(0,0,SZ,SZ);
+    gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    bind(pB,aP,3);bind(nB,aN,3);bind(fB,aFace,1);bind(uB,aUV,2);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iB);
+    gl.uniformMatrix4fv(uMVP,false,mvp);
+    gl.uniformMatrix3fv(uNM,false,m3(model));
+    /* texture unit 0 = front (T), unit 1 = back (C) */
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texT);gl.uniform1i(uTF,0);
+    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,texC);gl.uniform1i(uTB,1);
+    gl.drawElements(gl.TRIANGLES,nIdx,gl.UNSIGNED_SHORT,0);
+    fr++;
+    if(t<1){requestAnimationFrame(draw);}
+    else{
+      /* canvas persiste mostrando la faccia finale — nessuna lettera */
+      setTimeout(()=>{if(onDone)onDone();},300);
+    }
+  })();
+  return()=>{alive=false;};
+}
 
 function rollDice(sides,btn){
   currentDiceSides=sides;
   const r=document.createElement('span');r.className='ripple';r.style.cssText='width:60px;height:60px;left:50%;top:50%;margin-left:-30px;margin-top:-30px;';btn.appendChild(r);setTimeout(()=>r.remove(),500);
   document.querySelectorAll('.db').forEach(b=>b.classList.remove('last-rolled'));btn.classList.add('last-rolled');
 
-  /* Per ogni giocatore: anima il dado e mostra il risultato sulla carta */
   const rolls=players.map(()=>Math.ceil(Math.random()*sides));
+
+  /* ── D2: animazione moneta ── */
+  if(sides===2){
+    if(rollDice._coinBusy)return; /* ignora click se l'animazione è ancora in corso */
+    rollDice._coinBusy=true;
+    let done=0;
+    players.forEach((p,i)=>{
+      const ov=document.getElementById('do'+p.id);
+      const num=document.getElementById('don'+p.id);
+      const lbl=document.getElementById('dol'+p.id);
+      if(!ov)return;
+      ov.classList.add('show');
+      if(num){num.textContent='';num.className='dice-overlay-num';}
+      if(lbl)lbl.textContent='';
+      startCoinAnim(ov,rolls[i],()=>{
+        soundDice(rolls[i],sides);
+        if(lbl)lbl.textContent=rolls[i]===1?'TESTA':'CROCE';
+        if(++done>=players.length)rollDice._coinBusy=false; /* sblocca solo quando tutti hanno finito */
+      });
+    });
+    haptic('dice');
+    setTimeout(()=>{
+      players.forEach(p=>{
+        const ov=document.getElementById('do'+p.id);
+        if(ov){
+          ov.classList.remove('show');
+          /* rimuovi canvas WebGL residuo e ripristina num */
+          const oldCv=ov.querySelector('canvas');if(oldCv)oldCv.remove();
+          const num=document.getElementById('don'+p.id);
+          if(num)num.style.display='';
+        }
+      });
+    },10000); /* ~2.5s animazione + 7.5s persistenza risultato */
+    return;
+  }
+
+  /* Per ogni giocatore: anima il dado e mostra il risultato sulla carta */
   let ticks=0;
   const iv=setInterval(()=>{
     players.forEach(p=>{
