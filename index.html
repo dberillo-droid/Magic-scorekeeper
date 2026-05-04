@@ -514,6 +514,151 @@ function startCoinAnim(overlayEl, result, onDone){
   return()=>{alive=false;};
 }
 
+function startDiceAnim(overlayEl,result,onDone){
+  const SZ=220;
+  const numEl=overlayEl.querySelector('.dice-overlay-num');
+  const oldCv=overlayEl.querySelector('canvas');if(oldCv)oldCv.remove();
+  if(numEl){numEl.style.display='none';numEl.textContent='';}
+  const cv=document.createElement('canvas');
+  cv.width=SZ;cv.height=SZ;cv.style.cssText='display:block;flex-shrink:0;';
+  overlayEl.insertBefore(cv,numEl);
+  const gl=cv.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true})
+           ||cv.getContext('experimental-webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true});
+  if(!gl){cv.remove();if(numEl)numEl.style.display='';if(onDone)onDone();return()=>{};}
+
+  /* ── texture atlas 512×512 (POT), 3×2 griglia, ogni faccia 170×170 ── */
+  const FW=170,FH=170;
+  const tc=document.createElement('canvas');tc.width=512;tc.height=512;
+  const cx=tc.getContext('2d');
+  const DOTS={
+    1:[[.5,.5]],
+    2:[[.3,.3],[.7,.7]],
+    3:[[.3,.3],[.5,.5],[.7,.7]],
+    4:[[.3,.3],[.7,.3],[.3,.7],[.7,.7]],
+    5:[[.3,.3],[.7,.3],[.5,.5],[.3,.7],[.7,.7]],
+    6:[[.3,.22],[.7,.22],[.3,.5],[.7,.5],[.3,.78],[.7,.78]]
+  };
+  for(let f=1;f<=6;f++){
+    const col=(f-1)%3,row=Math.floor((f-1)/3);
+    const fx=col*FW,fy=row*FH;
+    cx.save();cx.translate(fx,fy);
+    cx.fillStyle='#F8F6F0';
+    cx.beginPath();const R=18;
+    cx.moveTo(R,0);cx.lineTo(FW-R,0);cx.arcTo(FW,0,FW,R,R);
+    cx.lineTo(FW,FH-R);cx.arcTo(FW,FH,FW-R,FH,R);
+    cx.lineTo(R,FH);cx.arcTo(0,FH,0,FH-R,R);
+    cx.lineTo(0,R);cx.arcTo(0,0,R,0,R);cx.closePath();cx.fill();
+    cx.strokeStyle='rgba(0,0,0,0.12)';cx.lineWidth=5;cx.stroke();
+    cx.fillStyle=f===1?'#CC1111':'#111111';
+    (DOTS[f]||[]).forEach(([px,py])=>{cx.beginPath();cx.arc(px*FW,py*FH,14,0,6.2832);cx.fill();});
+    cx.restore();
+  }
+  const tex=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,tc);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+
+  /* ── shaders ── */
+  const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,`
+    attribute vec3 aP;attribute vec3 aN;attribute vec2 aUV;
+    uniform mat4 uMVP;uniform mat3 uNM;
+    varying vec3 vN;varying vec2 vUV;
+    void main(){gl_Position=uMVP*vec4(aP,1.0);vN=normalize(uNM*aN);vUV=aUV;}
+  `));
+  gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,`
+    precision mediump float;
+    varying vec3 vN;varying vec2 vUV;
+    uniform sampler2D uTex;
+    void main(){
+      vec3 L=normalize(vec3(0.6,1.0,1.5));
+      vec3 V=normalize(vec3(0.0,0.1,1.0));
+      vec3 H=normalize(L+V);
+      float diff=max(dot(vN,L),0.0);
+      float spec=pow(max(dot(vN,H),0.0),40.0);
+      float amb=0.42;
+      vec4 c=texture2D(uTex,vUV);
+      c.rgb=c.rgb*(amb+diff*0.62)+vec3(1.0)*spec*0.22;
+      gl_FragColor=c;}
+  `));
+  gl.linkProgram(prog);gl.useProgram(prog);
+
+  /* ── geometria cubo ── */
+  const S=0.64;
+  const P=[],NV=[],UV=[],IX=[];let vi=0;
+  /* slot atlas: face f → col=(f-1)%3, row=floor((f-1)/3) */
+  function slot(f){const c=(f-1)%3,r=Math.floor((f-1)/3);return[c*FW/512,r*FH/512,FW/512,FH/512];}
+  /* addFace: 4 vertici CCW dall'esterno, normale, valore faccia, UV corners [[u,v]×4] */
+  function addFace(vs,nx,ny,nz,fv,uvc){
+    const[u0,v0,uw,vh]=slot(fv);
+    const base=vi;
+    vs.forEach(([x,y,z],i)=>{
+      P.push(x,y,z);NV.push(nx,ny,nz);
+      UV.push(u0+uvc[i][0]*uw, v0+uvc[i][1]*vh);vi++;
+    });
+    IX.push(base,base+1,base+2,base,base+2,base+3);
+  }
+  /* UV corners: [BL,BR,TR,TL] dove BL=u0v1, BR=u1v1, TR=u1v0, TL=u0v0 */
+  const C=[[0,1],[1,1],[1,0],[0,0]];
+  addFace([[-S,-S,S],[S,-S,S],[S,S,S],[-S,S,S]],    0, 0, 1, 1, C); /* +Z=1 */
+  addFace([[S,-S,-S],[-S,-S,-S],[-S,S,-S],[S,S,-S]], 0, 0,-1, 6, C); /* -Z=6 */
+  addFace([[S,-S,S],[S,-S,-S],[S,S,-S],[S,S,S]],     1, 0, 0, 2, C); /* +X=2 */
+  addFace([[-S,-S,-S],[-S,-S,S],[-S,S,S],[-S,S,-S]],-1, 0, 0, 5, C); /* -X=5 */
+  addFace([[-S,S,S],[S,S,S],[S,S,-S],[-S,S,-S]],     0, 1, 0, 3, C); /* +Y=3 */
+  addFace([[-S,-S,-S],[S,-S,-S],[S,-S,S],[-S,-S,S]], 0,-1, 0, 4, C); /* -Y=4 */
+
+  const mkBuf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
+  const pB=mkBuf(new Float32Array(P)),nB=mkBuf(new Float32Array(NV));
+  const uB=mkBuf(new Float32Array(UV)),iB=mkBuf(new Uint16Array(IX),gl.ELEMENT_ARRAY_BUFFER);
+  const nIdx=IX.length;
+  const aP_=gl.getAttribLocation(prog,'aP'),aN_=gl.getAttribLocation(prog,'aN'),aUV_=gl.getAttribLocation(prog,'aUV');
+  const uMVP_=gl.getUniformLocation(prog,'uMVP'),uNM_=gl.getUniformLocation(prog,'uNM'),uTex_=gl.getUniformLocation(prog,'uTex');
+
+  const mul=(a,b)=>{const r=new Float32Array(16);for(let c=0;c<4;c++)for(let rw=0;rw<4;rw++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+rw]*b[c*4+k];r[c*4+rw]=s;}return r;};
+  const rY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
+  const rX=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);};
+  const tr=(x,y,z)=>{const m=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);m[12]=x;m[13]=y;m[14]=z;return m;};
+  const persp=(fov,near,far)=>{const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);};
+  const m3=m=>new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);
+
+  /* rotazione finale: porta la faccia risultato verso la camera (+Z) */
+  const PI=Math.PI;
+  const fAngX={1:0,2:0,3:PI/2,4:-PI/2,5:0,6:0}[result]||0;
+  const fAngY={1:0,2:-PI/2,3:0,4:0,5:PI/2,6:PI}[result]||0;
+  /* angoli iniziali: finale + giri random */
+  const spX=(2+Math.floor(Math.random()*2))*PI*2*(Math.random()>.5?1:-1);
+  const spY=(3+Math.floor(Math.random()*2))*PI*2*(Math.random()>.5?1:-1);
+
+  const TOTAL=150,proj=persp(0.82,0.5,10.0),cam=tr(0,0,-3.2);
+  gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.clearColor(0,0,0,0);
+  const bind=(b,loc,sz)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,sz,gl.FLOAT,false,0,0);};
+
+  let fr=0,alive=true;
+  (function draw(){
+    if(!alive)return;
+    const t=Math.min(fr/TOTAL,1);
+    const arcY=0.45*Math.sin(PI*t);
+    const ease=1-Math.pow(1-t,5);
+    const ax=(fAngX-spX)+spX*ease, ay=(fAngY-spY)+spY*ease;
+    const model=mul(tr(0,arcY,0),mul(rY(ay),rX(ax)));
+    const mvp=mul(proj,mul(cam,model));
+    gl.viewport(0,0,SZ,SZ);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    bind(pB,aP_,3);bind(nB,aN_,3);bind(uB,aUV_,2);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iB);
+    gl.uniformMatrix4fv(uMVP_,false,mvp);gl.uniformMatrix3fv(uNM_,false,m3(model));
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(uTex_,0);
+    gl.drawElements(gl.TRIANGLES,nIdx,gl.UNSIGNED_SHORT,0);
+    fr++;
+    if(t<1){requestAnimationFrame(draw);}
+    else{setTimeout(()=>{if(onDone)onDone();},300);}
+  })();
+  return()=>{alive=false;};
+}
+
 function rollDice(sides,btn){
   if(rollDice._busy)return; /* blocca qualsiasi dado mentre un'animazione è in corso */
   rollDice._busy=true;
@@ -552,6 +697,37 @@ function rollDice(sides,btn){
       });
       rollDice._busy=false;
     },8000); /* ~2.5s animazione + 5.5s persistenza risultato */
+    return;
+  }
+
+  /* ── D6: animazione dado 3D ── */
+  if(sides===6){
+    players.forEach((p,i)=>{
+      const ov=document.getElementById('do'+p.id);
+      const num=document.getElementById('don'+p.id);
+      const lbl=document.getElementById('dol'+p.id);
+      if(!ov)return;
+      ov.classList.add('show');
+      if(num){num.textContent='';num.className='dice-overlay-num';}
+      if(lbl)lbl.textContent='';
+      startDiceAnim(ov,rolls[i],()=>{
+        soundDice(rolls[i],sides);
+        if(lbl)lbl.textContent='D6 · '+rolls[i];
+      });
+    });
+    haptic('dice');
+    setTimeout(()=>{
+      players.forEach(p=>{
+        const ov=document.getElementById('do'+p.id);
+        if(ov){
+          ov.classList.remove('show');
+          const oldCv=ov.querySelector('canvas');if(oldCv)oldCv.remove();
+          const num=document.getElementById('don'+p.id);
+          if(num)num.style.display='';
+        }
+      });
+      rollDice._busy=false;
+    },8000);
     return;
   }
 
