@@ -85,7 +85,7 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .db.last-rolled{border-color:#fbbf24;background:rgba(251,191,36,0.14);}
 .db .ripple{position:absolute;border-radius:50%;background:rgba(251,191,36,0.3);transform:scale(0);animation:ripple 0.4s linear;pointer-events:none;}
 @keyframes ripple{to{transform:scale(4);opacity:0;}}
-.dice-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;pointer-events:none;background:rgba(10,10,15,0.72);border-radius:16px;opacity:0;transition:opacity 0.15s;}
+.dice-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;pointer-events:none;background:rgba(10,10,15,0.25);border-radius:16px;opacity:0;transition:opacity 0.15s;}
 .dice-overlay.show{opacity:1;}
 .dice-overlay-num{font-family:'Space Grotesk',sans-serif;font-weight:700;line-height:1;color:#fbbf24;font-size:var(--life-fs,clamp(40px,14cqh,120px));}
 .dice-overlay-num.crit{color:#4ade80;}
@@ -527,16 +527,83 @@ function startDiceAnim(overlayEl,result,onDone){
   if(numEl){numEl.style.display='none';numEl.textContent='';}
   const cv=document.createElement('canvas');
   cv.width=SZ;cv.height=SZ;
-  cv.style.cssText='display:block;flex-shrink:1;';
+  cv.style.cssText='display:block;flex-shrink:1;border-radius:18px;background:transparent;overflow:hidden;';
   overlayEl.insertBefore(cv,numEl);
   const gl=cv.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true})
            ||cv.getContext('experimental-webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true});
   if(!gl){cv.remove();if(numEl)numEl.style.display='';if(onDone)onDone();return()=>{};}
 
-  /* ── texture atlas 512×512 (POT), 3×2 griglia, ogni faccia 170×170 ── */
+  /* helper per creare e caricare una texture 2D da un canvas */
+  const mkTex=(src,flip)=>{
+    const t=gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,flip?1:0);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    return t;
+  };
+
+  /* ── matcap 256×256: mercurio / cromo liquido — alto contrasto ── */
+  const mc=document.createElement('canvas');mc.width=256;mc.height=256;
+  const mcx=mc.getContext('2d');
+  /* base argento mercurio */
+  mcx.fillStyle='#787C88';mcx.fillRect(0,0,256,256);
+  /* gradiente radiale: centro più chiaro, bordi più scuri ma comunque argentati */
+  const mcBase=mcx.createRadialGradient(128,115,8,128,128,142);
+  mcBase.addColorStop(0.00,'#C0C4CC');
+  mcBase.addColorStop(0.35,'#909298');
+  mcBase.addColorStop(0.70,'#585A62');
+  mcBase.addColorStop(1.00,'#2C2E34');
+  mcx.fillStyle=mcBase;mcx.fillRect(0,0,256,256);
+  /* highlight principale: bagliore bianco intenso dall'alto-centro */
+  const mcHL=mcx.createRadialGradient(128,18,0,128,52,105);
+  mcHL.addColorStop(0.00,'rgba(255,255,255,1.00)');
+  mcHL.addColorStop(0.15,'rgba(255,255,255,0.95)');
+  mcHL.addColorStop(0.40,'rgba(215,225,240,0.45)');
+  mcHL.addColorStop(0.72,'rgba(160,175,195,0.10)');
+  mcHL.addColorStop(1.00,'rgba(0,0,0,0.00)');
+  mcx.fillStyle=mcHL;mcx.fillRect(0,0,256,256);
+  /* secondo riflesso: fill laterale alto-sinistra */
+  const mcHL2=mcx.createRadialGradient(32,52,0,52,72,72);
+  mcHL2.addColorStop(0.00,'rgba(230,238,255,0.88)');
+  mcHL2.addColorStop(0.35,'rgba(190,205,230,0.38)');
+  mcHL2.addColorStop(1.00,'rgba(0,0,0,0.00)');
+  mcx.fillStyle=mcHL2;mcx.fillRect(0,0,256,256);
+  /* glint: piccolo scintillio in alto-destra */
+  const mcGL=mcx.createRadialGradient(208,32,0,208,32,38);
+  mcGL.addColorStop(0.00,'rgba(255,255,255,0.80)');
+  mcGL.addColorStop(0.30,'rgba(255,255,255,0.28)');
+  mcGL.addColorStop(1.00,'rgba(0,0,0,0.00)');
+  mcx.fillStyle=mcGL;mcx.fillRect(0,0,256,256);
+  /* bounce ambiente: luce ambrata calda dal basso (pavimento/tavolo) */
+  const mcFlr=mcx.createRadialGradient(128,250,0,128,222,82);
+  mcFlr.addColorStop(0.00,'rgba(205,148,72,0.62)');
+  mcFlr.addColorStop(0.45,'rgba(175,120,52,0.25)');
+  mcFlr.addColorStop(1.00,'rgba(0,0,0,0.00)');
+  mcx.fillStyle=mcFlr;mcx.fillRect(0,0,256,256);
+  /* banda sottile di ambiente (riflesso orizzonte) */
+  const mcBnd=mcx.createLinearGradient(0,118,0,138);
+  mcBnd.addColorStop(0,'rgba(180,190,210,0.00)');
+  mcBnd.addColorStop(0.50,'rgba(180,190,210,0.28)');
+  mcBnd.addColorStop(1,'rgba(180,190,210,0.00)');
+  mcx.fillStyle=mcBnd;mcx.fillRect(0,0,256,256);
+  /* leggero centro ambientale (faccia verso camera) */
+  const mcCtr=mcx.createRadialGradient(128,128,0,128,128,88);
+  mcCtr.addColorStop(0.00,'rgba(95,100,115,0.42)');
+  mcCtr.addColorStop(1.00,'rgba(0,0,0,0.00)');
+  mcx.fillStyle=mcCtr;mcx.fillRect(0,0,256,256);
+  /* niente maschera circolare: gli UV vengono già clampati nello shader,
+     lasciare i bordi con colore pieno evita il nero quando le normali puntano di lato */
+  const mcTex=mkTex(mc,true);
+
+  /* ── dot atlas 512×512 (sfondo trasparente, solo puntini) ── */
   const FW=170,FH=170;
   const tc=document.createElement('canvas');tc.width=512;tc.height=512;
   const cx=tc.getContext('2d');
+  cx.clearRect(0,0,512,512);
   const DOTS={
     1:[[.5,.5]],
     2:[[.3,.3],[.7,.7]],
@@ -549,67 +616,73 @@ function startDiceAnim(overlayEl,result,onDone){
     const col=(f-1)%3,row=Math.floor((f-1)/3);
     const fx=col*FW,fy=row*FH;
     cx.save();cx.translate(fx,fy);
-    cx.fillStyle='#F8F6F0';
-    cx.beginPath();const R=18;
-    cx.moveTo(R,0);cx.lineTo(FW-R,0);cx.arcTo(FW,0,FW,R,R);
-    cx.lineTo(FW,FH-R);cx.arcTo(FW,FH,FW-R,FH,R);
-    cx.lineTo(R,FH);cx.arcTo(0,FH,0,FH-R,R);
-    cx.lineTo(0,R);cx.arcTo(0,0,R,0,R);cx.closePath();cx.fill();
-    cx.strokeStyle='rgba(0,0,0,0.12)';cx.lineWidth=5;cx.stroke();
-    cx.fillStyle=f===1?'#CC1111':'#111111';
-    (DOTS[f]||[]).forEach(([px,py])=>{cx.beginPath();cx.arc(px*FW,py*FH,14,0,6.2832);cx.fill();});
+    const DR=FW*0.076; /* raggio dot */
+    (DOTS[f]||[]).forEach(([px,py])=>{
+      const dx=px*FW,dy=py*FH;
+      /* ombra dot (leggermente offset) */
+      cx.beginPath();cx.arc(dx+1.2,dy+2,DR,0,6.2832);
+      cx.fillStyle='rgba(0,0,0,0.50)';cx.fill();
+      /* corpo dot */
+      cx.beginPath();cx.arc(dx,dy,DR,0,6.2832);
+      cx.fillStyle=f===1?'#BE1010':'#101010';cx.fill();
+      /* micro-specular sul dot */
+      cx.beginPath();cx.arc(dx-DR*.38,dy-DR*.45,DR*.30,0,6.2832);
+      cx.fillStyle='rgba(255,255,255,0.22)';cx.fill();
+    });
     cx.restore();
   }
-  const tex=gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D,tex);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,tc);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  const dotTex=mkTex(tc,false);
 
-  /* ── shaders ── */
+  /* ── shaders: matcap + composite dot ── */
   const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
   const prog=gl.createProgram();
   gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,`
     attribute vec3 aP;attribute vec3 aN;attribute vec2 aUV;
     uniform mat4 uMVP;uniform mat3 uNM;
     varying vec3 vN;varying vec2 vUV;
-    void main(){gl_Position=uMVP*vec4(aP,1.0);vN=normalize(uNM*aN);vUV=aUV;}
+    void main(){
+      gl_Position=uMVP*vec4(aP,1.0);
+      /* normali sferizzate: mix tra normale piatta e normale sferica (dalla posizione)
+         questo fa variare il campionamento del matcap ATTRAVERSO la faccia → effetto metallo liquido */
+      vec3 sphereN=normalize(aP);
+      vec3 mixN=normalize(mix(aN,sphereN,0.68));
+      vN=normalize(uNM*mixN);
+      vUV=aUV;
+    }
   `));
   gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,`
     precision mediump float;
     varying vec3 vN;varying vec2 vUV;
-    uniform sampler2D uTex;
+    uniform sampler2D uMatcap;
+    uniform sampler2D uDots;
     void main(){
-      vec3 L=normalize(vec3(0.6,1.0,1.5));
-      vec3 V=normalize(vec3(0.0,0.1,1.0));
-      vec3 H=normalize(L+V);
-      float diff=max(dot(vN,L),0.0);
-      float spec=pow(max(dot(vN,H),0.0),40.0);
-      float amb=0.42;
-      vec4 c=texture2D(uTex,vUV);
-      c.rgb=c.rgb*(amb+diff*0.62)+vec3(1.0)*spec*0.22;
-      gl_FragColor=c;}
+      /* matcap UV da normali world-space (camera = solo traslazione → view==world) */
+      vec2 mcUV=clamp(vN.xy*0.5+0.5,0.001,0.999);
+      vec4 metal=texture2D(uMatcap,mcUV);
+      /* rim darkening: bordi più scuri ma non neri, come il mercurio */
+      float rim=1.0-abs(vN.z);
+      metal.rgb=mix(metal.rgb,vec3(0.12,0.13,0.15),rim*rim*0.70);
+      /* dot overlay (alpha compositing) */
+      vec4 dot=texture2D(uDots,vUV);
+      vec3 col=mix(metal.rgb,dot.rgb,dot.a*0.93);
+      gl_FragColor=vec4(col,1.0);
+    }
   `));
   gl.linkProgram(prog);gl.useProgram(prog);
 
   /* ── geometria cubo ── */
   const S=0.64;
   const P=[],NV=[],UV=[],IX=[];let vi=0;
-  /* slot atlas: face f → col=(f-1)%3, row=floor((f-1)/3) */
   function slot(f){const c=(f-1)%3,r=Math.floor((f-1)/3);return[c*FW/512,r*FH/512,FW/512,FH/512];}
-  /* addFace: 4 vertici CCW dall'esterno, normale, valore faccia, UV corners [[u,v]×4] */
   function addFace(vs,nx,ny,nz,fv,uvc){
     const[u0,v0,uw,vh]=slot(fv);
     const base=vi;
     vs.forEach(([x,y,z],i)=>{
       P.push(x,y,z);NV.push(nx,ny,nz);
-      UV.push(u0+uvc[i][0]*uw, v0+uvc[i][1]*vh);vi++;
+      UV.push(u0+uvc[i][0]*uw,v0+uvc[i][1]*vh);vi++;
     });
     IX.push(base,base+1,base+2,base,base+2,base+3);
   }
-  /* UV corners: [BL,BR,TR,TL] dove BL=u0v1, BR=u1v1, TR=u1v0, TL=u0v0 */
   const C=[[0,1],[1,1],[1,0],[0,0]];
   addFace([[-S,-S,S],[S,-S,S],[S,S,S],[-S,S,S]],    0, 0, 1, 1, C); /* +Z=1 */
   addFace([[S,-S,-S],[-S,-S,-S],[-S,S,-S],[S,S,-S]], 0, 0,-1, 6, C); /* -Z=6 */
@@ -623,7 +696,8 @@ function startDiceAnim(overlayEl,result,onDone){
   const uB=mkBuf(new Float32Array(UV)),iB=mkBuf(new Uint16Array(IX),gl.ELEMENT_ARRAY_BUFFER);
   const nIdx=IX.length;
   const aP_=gl.getAttribLocation(prog,'aP'),aN_=gl.getAttribLocation(prog,'aN'),aUV_=gl.getAttribLocation(prog,'aUV');
-  const uMVP_=gl.getUniformLocation(prog,'uMVP'),uNM_=gl.getUniformLocation(prog,'uNM'),uTex_=gl.getUniformLocation(prog,'uTex');
+  const uMVP_=gl.getUniformLocation(prog,'uMVP'),uNM_=gl.getUniformLocation(prog,'uNM');
+  const uMC_=gl.getUniformLocation(prog,'uMatcap'),uDt_=gl.getUniformLocation(prog,'uDots');
 
   const mul=(a,b)=>{const r=new Float32Array(16);for(let c=0;c<4;c++)for(let rw=0;rw<4;rw++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+rw]*b[c*4+k];r[c*4+rw]=s;}return r;};
   const rY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
@@ -632,11 +706,9 @@ function startDiceAnim(overlayEl,result,onDone){
   const persp=(fov,near,far)=>{const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);};
   const m3=m=>new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);
 
-  /* rotazione finale: porta la faccia risultato verso la camera (+Z) */
   const PI=Math.PI;
   const fAngX={1:0,2:0,3:PI/2,4:-PI/2,5:0,6:0}[result]||0;
   const fAngY={1:0,2:-PI/2,3:0,4:0,5:PI/2,6:PI}[result]||0;
-  /* angoli iniziali: finale + giri random */
   const spX=(2+Math.floor(Math.random()*2))*PI*2*(Math.random()>.5?1:-1);
   const spY=(3+Math.floor(Math.random()*2))*PI*2*(Math.random()>.5?1:-1);
 
@@ -650,14 +722,15 @@ function startDiceAnim(overlayEl,result,onDone){
     const t=Math.min(fr/TOTAL,1);
     const arcY=0.45*Math.sin(PI*t);
     const ease=1-Math.pow(1-t,5);
-    const ax=(fAngX-spX)+spX*ease, ay=(fAngY-spY)+spY*ease;
+    const ax=(fAngX-spX)+spX*ease,ay=(fAngY-spY)+spY*ease;
     const model=mul(tr(0,arcY,0),mul(rY(ay),rX(ax)));
     const mvp=mul(proj,mul(cam,model));
     gl.viewport(0,0,SZ,SZ);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     bind(pB,aP_,3);bind(nB,aN_,3);bind(uB,aUV_,2);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iB);
     gl.uniformMatrix4fv(uMVP_,false,mvp);gl.uniformMatrix3fv(uNM_,false,m3(model));
-    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(uTex_,0);
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,mcTex);gl.uniform1i(uMC_,0);
+    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,dotTex);gl.uniform1i(uDt_,1);
     gl.drawElements(gl.TRIANGLES,nIdx,gl.UNSIGNED_SHORT,0);
     fr++;
     if(t<1){requestAnimationFrame(draw);}
