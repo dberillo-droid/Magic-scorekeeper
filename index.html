@@ -519,13 +519,15 @@ function startCoinAnim(overlayEl, result, onDone){
 }
 
 function startDiceAnim(overlayEl,result,onDone){
-  const SZ=150;
+  /* dimensione adattiva: max 130px, ma al più il 42% del lato minore dell'overlay */
+  const rect=overlayEl.getBoundingClientRect();
+  const SZ=Math.max(60,Math.min(130,Math.floor(Math.min(rect.width,rect.height)*0.42)));
   const numEl=overlayEl.querySelector('.dice-overlay-num');
   const oldCv=overlayEl.querySelector('canvas');if(oldCv)oldCv.remove();
   if(numEl){numEl.style.display='none';numEl.textContent='';}
   const cv=document.createElement('canvas');
   cv.width=SZ;cv.height=SZ;
-  cv.style.cssText='display:block;flex-shrink:1;max-width:min('+SZ+'px,55cqw);max-height:min('+SZ+'px,52cqh);';
+  cv.style.cssText='display:block;flex-shrink:1;';
   overlayEl.insertBefore(cv,numEl);
   const gl=cv.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true})
            ||cv.getContext('experimental-webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true});
