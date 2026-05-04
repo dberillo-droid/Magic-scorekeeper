@@ -513,9 +513,10 @@ function rollDice(sides,btn){
 
   /* ── D2: animazione moneta ── */
   if(sides===2){
-    if(rollDice._coinBusy)return; /* ignora click se l'animazione è ancora in corso */
+    if(rollDice._coinBusy)return; /* ignora click per tutta la durata overlay */
     rollDice._coinBusy=true;
-    let done=0;
+    /* cancella eventuale timeout residuo da lancio precedente */
+    if(rollDice._coinTimer)clearTimeout(rollDice._coinTimer);
     players.forEach((p,i)=>{
       const ov=document.getElementById('do'+p.id);
       const num=document.getElementById('don'+p.id);
@@ -527,21 +528,21 @@ function rollDice(sides,btn){
       startCoinAnim(ov,rolls[i],()=>{
         soundDice(rolls[i],sides);
         if(lbl)lbl.textContent=rolls[i]===1?'TESTA':'CROCE';
-        if(++done>=players.length)rollDice._coinBusy=false; /* sblocca solo quando tutti hanno finito */
       });
     });
     haptic('dice');
-    setTimeout(()=>{
+    rollDice._coinTimer=setTimeout(()=>{
       players.forEach(p=>{
         const ov=document.getElementById('do'+p.id);
         if(ov){
           ov.classList.remove('show');
-          /* rimuovi canvas WebGL residuo e ripristina num */
           const oldCv=ov.querySelector('canvas');if(oldCv)oldCv.remove();
           const num=document.getElementById('don'+p.id);
           if(num)num.style.display='';
         }
       });
+      rollDice._coinBusy=false; /* sblocca solo dopo che l'overlay è sparito */
+      rollDice._coinTimer=null;
     },10000); /* ~2.5s animazione + 7.5s persistenza risultato */
     return;
   }
