@@ -505,35 +505,16 @@ function startCoinAnim(overlayEl, result, onDone){
 }
 
 function rollDice(sides,btn){
+  if(rollDice._busy)return; /* blocca qualsiasi dado mentre un'animazione è in corso */
+  rollDice._busy=true;
   currentDiceSides=sides;
   const r=document.createElement('span');r.className='ripple';r.style.cssText='width:60px;height:60px;left:50%;top:50%;margin-left:-30px;margin-top:-30px;';btn.appendChild(r);setTimeout(()=>r.remove(),500);
   document.querySelectorAll('.db').forEach(b=>b.classList.remove('last-rolled'));btn.classList.add('last-rolled');
 
   const rolls=players.map(()=>Math.ceil(Math.random()*sides));
 
-  /* ── se la moneta è visibile e si clicca un dado diverso: pulisci subito ── */
-  if(sides!==2 && rollDice._coinBusy){
-    rollDice._coinBusy=false;
-    if(rollDice._coinTimer){clearTimeout(rollDice._coinTimer);rollDice._coinTimer=null;}
-    players.forEach(p=>{
-      const ov=document.getElementById('do'+p.id);
-      if(ov){
-        ov.classList.remove('show');
-        const oldCv=ov.querySelector('canvas');if(oldCv)oldCv.remove();
-        const num=document.getElementById('don'+p.id);
-        if(num){num.style.display='';num.textContent='';}
-        const lbl=document.getElementById('dol'+p.id);
-        if(lbl)lbl.textContent='';
-      }
-    });
-  }
-
   /* ── D2: animazione moneta ── */
   if(sides===2){
-    if(rollDice._coinBusy)return; /* ignora click per tutta la durata overlay */
-    rollDice._coinBusy=true;
-    /* cancella eventuale timeout residuo da lancio precedente */
-    if(rollDice._coinTimer)clearTimeout(rollDice._coinTimer);
     players.forEach((p,i)=>{
       const ov=document.getElementById('do'+p.id);
       const num=document.getElementById('don'+p.id);
@@ -548,7 +529,7 @@ function rollDice(sides,btn){
       });
     });
     haptic('dice');
-    rollDice._coinTimer=setTimeout(()=>{
+    setTimeout(()=>{
       players.forEach(p=>{
         const ov=document.getElementById('do'+p.id);
         if(ov){
@@ -558,8 +539,7 @@ function rollDice(sides,btn){
           if(num)num.style.display='';
         }
       });
-      rollDice._coinBusy=false; /* sblocca solo dopo che l'overlay è sparito */
-      rollDice._coinTimer=null;
+      rollDice._busy=false;
     },10000); /* ~2.5s animazione + 7.5s persistenza risultato */
     return;
   }
@@ -602,6 +582,7 @@ function rollDice(sides,btn){
       },2500);
       setTimeout(()=>{
         players.forEach(p=>{const ov=document.getElementById('do'+p.id);if(ov)ov.classList.remove('show');});
+        rollDice._busy=false;
       },4500);
     }
   },50);
