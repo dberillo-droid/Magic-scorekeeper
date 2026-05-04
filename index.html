@@ -93,6 +93,10 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .dice-overlay-num.best{color:#4ade80;}
 .dice-overlay-num.worst{color:#f87171;}
 .dice-overlay-label{font-size:10px;letter-spacing:2px;color:rgba(251,191,36,0.7);margin-top:6px;font-weight:600;}
+.dice-overlay-label.best{color:#4ade80;}
+.dice-overlay-label.worst{color:#f87171;}
+canvas.d6-best{border-radius:12px;box-shadow:0 0 18px 4px rgba(74,222,128,0.55);}
+canvas.d6-worst{border-radius:12px;box-shadow:0 0 18px 4px rgba(248,113,113,0.55);}
 .dice-overlay-num.rolling-anim{animation:diceAnim 0.35s ease-out;}
 
 .grid{flex:1;min-height:0;display:grid;gap:8px;}
@@ -702,6 +706,8 @@ function rollDice(sides,btn){
 
   /* ── D6: animazione dado 3D ── */
   if(sides===6){
+    const minR=Math.min(...rolls),maxR=Math.max(...rolls);
+    const tie=minR===maxR||players.length<2;
     players.forEach((p,i)=>{
       const ov=document.getElementById('do'+p.id);
       const num=document.getElementById('don'+p.id);
@@ -710,9 +716,13 @@ function rollDice(sides,btn){
       ov.classList.add('show');
       if(num){num.textContent='';num.className='dice-overlay-num';}
       if(lbl)lbl.textContent='';
-      startDiceAnim(ov,rolls[i],()=>{
-        soundDice(rolls[i],sides);
-        if(lbl)lbl.textContent='D6 · '+rolls[i];
+      const f=rolls[i];
+      const isBest=!tie&&f===maxR, isWorst=!tie&&f===minR;
+      startDiceAnim(ov,f,()=>{
+        soundDice(f,sides);
+        const cv=ov.querySelector('canvas');
+        if(cv){cv.classList.toggle('d6-best',isBest);cv.classList.toggle('d6-worst',isWorst);}
+        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D6 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
       });
     });
     haptic('dice');
