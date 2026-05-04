@@ -282,11 +282,11 @@ let diceVisible=false;
 let currentDiceSides=20;
 /* pre-carica il path SVG del Planeswalker dal file locale */
 let _pwSvgPath=null;
-fetch('/planeswalker.svg').then(r=>r.text()).then(txt=>{const m=txt.match(/\sd="([^"]+)"/);if(m)_pwSvgPath=m[1];}).catch(()=>{});
+fetch('./planeswalker.svg').then(r=>r.text()).then(txt=>{const m=txt.match(/\sd="([^"]+)"/);if(m)_pwSvgPath=m[1];}).catch(()=>{});
 function toggleDice(){diceVisible=!diceVisible;document.getElementById('dicePanel').classList.toggle('on',diceVisible);document.getElementById('diceToggleBtn').classList.toggle('on',diceVisible);}
 
 /* pre-carica audio coin-flip */
-const _coinAudio=(()=>{try{const a=new Audio('/coin-flip.mp3');a.preload='auto';return a;}catch(e){return null;}})();
+const _coinAudio=(()=>{try{const a=new Audio('./coin-flip.mp3');a.preload='auto';return a;}catch(e){return null;}})();
 function playCoinSound(){
   try{
     if(_coinAudio){_coinAudio.currentTime=0;_coinAudio.play().catch(()=>{});}
