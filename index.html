@@ -860,24 +860,26 @@ function startD10Anim(overlayEl,result,onDone){
   mcx.fillStyle=_ct;mcx.fillRect(0,0,256,256);
   const mcTex=mkTex(mc,true);
 
-  /* ── atlas cifre 512×512 (4×3 celle da 128px, 10 cifre) ── */
+  /* ── atlas cifre 512×512 (4×3 celle da 128px). Le cifre sono disegnate
+     CENTRATE NEL CENTROIDE della kite (non nel centro della cella) e
+     dimensionate per evitare il clipping sulle zone strette dell'apice. ── */
   const dt=document.createElement('canvas');dt.width=512;dt.height=512;
   const dx2=dt.getContext('2d');
   dx2.clearRect(0,0,512,512);
-  dx2.font='bold 86px "Space Grotesk", Arial, sans-serif';
+  dx2.font='900 72px "Arial Black","Inter",sans-serif';
   dx2.textAlign='center';dx2.textBaseline='middle';
-  const digits=['1','2','3','4','5','6','7','8','9','0']; /* slot 9 = "0" (rappresenta il 10) */
+  const digits=['1','2','3','4','5','6','7','8','9','0']; /* slot 9 = "0" (=10) */
+  /* il centroide della kite cade a v≈0.655 (slot 0-4 upper) o v≈0.345 (slot 5-9 lower) */
   for(let s=0;s<10;s++){
     const cc=s%4,rr=Math.floor(s/4);
-    const ccx=cc*128+64,ccy=rr*128+64;
-    /* ombra leggera */
-    dx2.fillStyle='rgba(0,0,0,0.55)';dx2.fillText(digits[s],ccx+1.5,ccy+2.5);
-    /* corpo nero */
+    const ccx=cc*128+64;
+    const ccy=rr*128+(s<5?128*0.655:128*0.345); /* posiziona al centroide kite */
+    /* corpo nero pieno, niente outline (distorce sui bordi della kite) */
     dx2.fillStyle='#0a0a0a';dx2.fillText(digits[s],ccx,ccy);
-    /* sottolineatura per 6 e 9 (ambiguità classica D10) */
+    /* sottolineatura per 6 e 9 */
     if(s===5||s===8){
       const w=dx2.measureText(digits[s]).width;
-      dx2.fillRect(ccx-w*0.35,ccy+38,w*0.7,4);
+      dx2.fillRect(ccx-w*0.30,ccy+30,w*0.6,4);
     }
   }
   const digTex=mkTex(dt,false);
@@ -898,15 +900,19 @@ function startD10Anim(overlayEl,result,onDone){
   const vnrm=a=>{const l=Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);return l>0?[a[0]/l,a[1]/l,a[2]/l]:[0,1,0];};
   const vdot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 
-  /* UV per kite: apex=v0 (top/bot), v1=lato, v2=mid (l0/u1), v3=altro lato
-     orient: 'up' = apex visivamente alto, 'down' = apex visivamente basso */
+  /* UV trapezoidale che rispetta la forma reale della kite proiettata.
+     v_m = posizione verticale di u0/u1 (per upper) o l0/l1 (per lower) nella cella.
+     Calcolata dalla geometria: top apex molto distante, u0/l0 vicini → v_m ≈ 0.81 */
+  const v_m=0.81;
   function kiteUVs(slot,orient){
     const cc=slot%4,rr=Math.floor(slot/4);
     const u0=cc*0.25,v0=rr*0.25,w=0.25;
     if(orient==='up'){
-      return [[u0+w*0.5,v0+w*0.06],[u0+w*0.06,v0+w*0.5],[u0+w*0.5,v0+w*0.94],[u0+w*0.94,v0+w*0.5]];
+      /* upper kite: apex (top) in alto, l0 in basso, u0/u1 ai lati a y=0.81 cella */
+      return [[u0+w*0.5,v0+w*0.0],[u0+w*0.0,v0+w*v_m],[u0+w*0.5,v0+w*1.0],[u0+w*1.0,v0+w*v_m]];
     } else {
-      return [[u0+w*0.5,v0+w*0.94],[u0+w*0.94,v0+w*0.5],[u0+w*0.5,v0+w*0.06],[u0+w*0.06,v0+w*0.5]];
+      /* lower kite: apex (bot) in basso, u1 in alto, l0/l1 ai lati a y=0.19 cella */
+      return [[u0+w*0.5,v0+w*1.0],[u0+w*1.0,v0+w*(1-v_m)],[u0+w*0.5,v0+w*0.0],[u0+w*0.0,v0+w*(1-v_m)]];
     }
   }
 
@@ -979,10 +985,13 @@ function startD10Anim(overlayEl,result,onDone){
   const persp=(fov,near,far)=>{const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);};
   const m3=m=>new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);
 
-  /* rotazione finale: la faccia scelta deve essere perpendicolare alla camera
-     fAng = atan(ra / (ya+apexH)) — angolo tra normale faccia e asse Y */
+  /* rotazione finale: porta la faccia scelta perpendicolare alla camera.
+     IMPORTANTE: rY(a) AGGIUNGE 'a' all'azimuth, quindi per portare kite_az → 0
+     serve fAngY = -kite_az (segno negativo!). Inoltre cumulo qualche giro extra
+     per evitare che lo spin finisca in posizione fissa. */
   const fIdx=(result-1)%10;
-  const fAngY=fIdx<5 ? fIdx*PHI+PHI/2 : (fIdx-5)*PHI;
+  const baseAngY=fIdx<5 ? -(fIdx*PHI+PHI/2) : -(fIdx-5)*PHI;
+  const fAngY=baseAngY;
   const fAng=Math.atan(ra/(ya+apexH));
   const fAngX=fIdx<5 ? fAng : -fAng;
   const spX=(3+Math.floor(Math.random()*3))*PI*2*(Math.random()>.5?1:-1);
@@ -999,7 +1008,8 @@ function startD10Anim(overlayEl,result,onDone){
     const arcY=0.40*Math.sin(PI*t);
     const ease=1-Math.pow(1-t,5);
     const ax=(fAngX-spX)+spX*ease,ay=(fAngY-spY)+spY*ease;
-    const model=mul(tr(0,arcY,0),mul(rY(ay),rX(ax)));
+    /* ORDINE CRITICO: rY PRIMA (porta kite a azimuth 0), poi rX (tilta verso camera) */
+    const model=mul(tr(0,arcY,0),mul(rX(ax),rY(ay)));
     const mvp=mul(proj,mul(cam,model));
     gl.viewport(0,0,SZ,SZ);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     bind(pB,aP_,3);bind(nB,aN_,3);bind(uB,aUV_,2);
