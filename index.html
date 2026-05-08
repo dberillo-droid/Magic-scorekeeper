@@ -1114,11 +1114,6 @@ function startD20Anim(overlayEl,result,onDone){
     const ccx=cc*cellW+cellW/2;
     const ccy=rr*cellH+(apexUp?cellH*0.66:cellH*0.34);
     dx2.fillStyle='#0a0a0a';dx2.fillText(String(s+1),ccx,ccy);
-    /* sottolineatura per 6, 9, 16, 19 (disambiguazione 6/9 e 16/19) */
-    if(s===5||s===8||s===15||s===18){
-      const w=dx2.measureText(String(s+1)).width;
-      dx2.fillRect(ccx-w*0.30,ccy+(apexUp?40:-44),w*0.6,5);
-    }
   }
   const digTex=mkTex(dt,false);
 
