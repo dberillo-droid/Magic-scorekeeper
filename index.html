@@ -103,6 +103,9 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .d20-wrap{border-radius:50%;}
 .d20-wrap.d6-best{box-shadow:0 0 18px 4px rgba(74,222,128,0.55);}
 .d20-wrap.d6-worst{box-shadow:0 0 18px 4px rgba(248,113,113,0.55);}
+.d4-wrap{border-radius:50%;}
+.d4-wrap.d6-best{box-shadow:0 0 18px 4px rgba(74,222,128,0.55);}
+.d4-wrap.d6-worst{box-shadow:0 0 18px 4px rgba(248,113,113,0.55);}
 .dice-overlay-num.rolling-anim{animation:diceAnim 0.35s ease-out;}
 
 .grid{flex:1;min-height:0;display:grid;gap:8px;}
@@ -1270,6 +1273,223 @@ function startD20Anim(overlayEl,result,onDone){
   return()=>{alive=false;};
 }
 
+/* ═══════════════════════════════════════════════════════
+   D4 — Tetrahedron (metallo liquido + cifre 1-4)
+   ═══════════════════════════════════════════════════════ */
+function startD4Anim(overlayEl,result,onDone){
+  const rect=overlayEl.getBoundingClientRect();
+  const SZ=Math.max(54,Math.min(112,Math.floor(Math.min(rect.width,rect.height)*0.36)));
+  const numEl=overlayEl.querySelector('.dice-overlay-num');
+  const oldWrap=overlayEl.querySelector('.d4-wrap');if(oldWrap)oldWrap.remove();
+  if(numEl){numEl.style.display='none';numEl.textContent='';}
+
+  const cvGL=document.createElement('canvas');cvGL.width=SZ;cvGL.height=SZ;
+  const gl=cvGL.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true})
+           ||cvGL.getContext('experimental-webgl',{alpha:true,antialias:true,preserveDrawingBuffer:true});
+  if(!gl){if(numEl)numEl.style.display='';if(onDone)onDone();return()=>{};}
+
+  const cv=document.createElement('canvas');cv.width=SZ;cv.height=SZ;
+  cv.style.cssText='display:block;';
+  const ctx2d=cv.getContext('2d');
+  const cvWrap=document.createElement('div');
+  cvWrap.className='d4-wrap';
+  cvWrap.style.cssText='flex-shrink:1;line-height:0;';
+  cvWrap.appendChild(cv);
+  overlayEl.insertBefore(cvWrap,numEl);
+
+  const mkTex=(src,flip)=>{
+    const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,flip?1:0);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    return t;
+  };
+
+  /* matcap stagno (identico agli altri dadi) */
+  const mc=document.createElement('canvas');mc.width=256;mc.height=256;
+  const mcx=mc.getContext('2d');
+  mcx.fillStyle='#8E96A4';mcx.fillRect(0,0,256,256);
+  const _b=mcx.createRadialGradient(128,108,6,128,128,148);
+  _b.addColorStop(0,'#D8DCE8');_b.addColorStop(0.28,'#A8B0C0');_b.addColorStop(0.55,'#707888');_b.addColorStop(0.82,'#404650');_b.addColorStop(1,'#242830');
+  mcx.fillStyle=_b;mcx.fillRect(0,0,256,256);
+  const _h=mcx.createRadialGradient(128,10,0,128,52,135);
+  _h.addColorStop(0,'rgba(255,255,255,1)');_h.addColorStop(0.32,'rgba(230,240,255,.78)');_h.addColorStop(0.60,'rgba(200,218,245,.35)');_h.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_h;mcx.fillRect(0,0,256,256);
+  const _h2=mcx.createRadialGradient(22,40,0,48,68,108);
+  _h2.addColorStop(0,'rgba(240,248,255,.98)');_h2.addColorStop(0.22,'rgba(210,225,248,.72)');_h2.addColorStop(0.55,'rgba(175,198,230,.28)');_h2.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_h2;mcx.fillRect(0,0,256,256);
+  const _gl=mcx.createRadialGradient(214,24,0,214,24,50);
+  _gl.addColorStop(0,'rgba(255,255,255,1)');_gl.addColorStop(0.22,'rgba(248,252,255,.55)');_gl.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_gl;mcx.fillRect(0,0,256,256);
+  const _h3=mcx.createRadialGradient(242,128,0,230,128,75);
+  _h3.addColorStop(0,'rgba(210,225,245,.65)');_h3.addColorStop(0.45,'rgba(185,205,232,.22)');_h3.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_h3;mcx.fillRect(0,0,256,256);
+  const _fl=mcx.createRadialGradient(128,250,0,128,220,88);
+  _fl.addColorStop(0,'rgba(200,148,68,.58)');_fl.addColorStop(0.45,'rgba(170,122,50,.22)');_fl.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_fl;mcx.fillRect(0,0,256,256);
+  const _bd=mcx.createLinearGradient(0,112,0,144);
+  _bd.addColorStop(0,'rgba(185,198,220,0)');_bd.addColorStop(.5,'rgba(185,198,220,.40)');_bd.addColorStop(1,'rgba(185,198,220,0)');
+  mcx.fillStyle=_bd;mcx.fillRect(0,0,256,256);
+  const _ct=mcx.createRadialGradient(128,128,0,128,128,100);
+  _ct.addColorStop(0,'rgba(155,165,185,.60)');_ct.addColorStop(.55,'rgba(120,132,155,.22)');_ct.addColorStop(1,'rgba(0,0,0,0)');
+  mcx.fillStyle=_ct;mcx.fillRect(0,0,256,256);
+  const mcTex=mkTex(mc,true);
+
+  /* atlas cifre 512×512 — 2×2 celle (256×256), cifre 1-4 grandi */
+  const dt=document.createElement('canvas');dt.width=512;dt.height=512;
+  const dx2=dt.getContext('2d');
+  dx2.clearRect(0,0,512,512);
+  dx2.font='900 200px "Arial Black","Inter",sans-serif';
+  dx2.textAlign='center';dx2.textBaseline='middle';
+  /* tutte le facce sono "apex up" dopo le rotazioni → centroide del triangolo a v=2/3 */
+  for(let s=0;s<4;s++){
+    const cc=s%2,rr=Math.floor(s/2);
+    const ccx=cc*256+128;
+    const ccy=rr*256+256*0.66;
+    dx2.fillStyle='#0a0a0a';dx2.fillText(String(s+1),ccx,ccy);
+  }
+  const digTex=mkTex(dt,false);
+
+  /* geometria tetraedro regolare (vertex-up) */
+  const PI=Math.PI;
+  const R=0.95;
+  const r_base=2*Math.sqrt(2)/3*R;
+  const y_base=-R/3;
+  const V0=[0,R,0];
+  const V1=[Math.sin(0)*r_base,y_base,Math.cos(0)*r_base];
+  const V2=[Math.sin(2*PI/3)*r_base,y_base,Math.cos(2*PI/3)*r_base];
+  const V3=[Math.sin(4*PI/3)*r_base,y_base,Math.cos(4*PI/3)*r_base];
+
+  const P=[],NV=[],UV=[],IX=[];let vi=0;
+  const vsub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const vcrs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const vnrm=a=>{const l=Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);return l>0?[a[0]/l,a[1]/l,a[2]/l]:[0,1,0];};
+  const vdot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+
+  function slotUVs(s){
+    /* template 'up': vs[0]=apex, vs[1]=base-left, vs[2]=base-right */
+    const cc=s%2,rr=Math.floor(s/2);
+    const u0=cc*256/512,v0=rr*256/512,w=256/512,h=256/512;
+    return [[u0+w*0.5,v0+h*0.0],[u0+w*0.0,v0+h*1.0],[u0+w*1.0,v0+h*1.0]];
+  }
+
+  function addTri(vs,uvs){
+    let n=vnrm(vcrs(vsub(vs[1],vs[0]),vsub(vs[2],vs[0])));
+    const c=[(vs[0][0]+vs[1][0]+vs[2][0])/3,(vs[0][1]+vs[1][1]+vs[2][1])/3,(vs[0][2]+vs[1][2]+vs[2][2])/3];
+    let O=[0,1,2];
+    if(vdot(n,c)<0){n=[-n[0],-n[1],-n[2]];O=[0,2,1];}
+    const base=vi;
+    for(const k of O){P.push(...vs[k]);NV.push(...n);UV.push(...uvs[k]);vi++;}
+    IX.push(base,base+1,base+2);
+  }
+
+  /* 4 facce. ORDINE vertici dopo le rotazioni finali:
+     slot 0: faccia inferiore — V1=apex (top dopo rX(-π/2)), V3=left, V2=right
+     slot 1: faccia laterale az 60°  — V0=apex, V1=left, V2=right
+     slot 2: faccia laterale az 180° — V0=apex, V2=left, V3=right
+     slot 3: faccia laterale az 300° — V0=apex, V3=left, V1=right */
+  addTri([V1,V3,V2],slotUVs(0));
+  addTri([V0,V1,V2],slotUVs(1));
+  addTri([V0,V2,V3],slotUVs(2));
+  addTri([V0,V3,V1],slotUVs(3));
+
+  /* shaders matcap+digits con fade */
+  const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,`
+    attribute vec3 aP;attribute vec3 aN;attribute vec2 aUV;
+    uniform mat4 uMVP;uniform mat3 uNM;
+    varying vec3 vN;varying vec2 vUV;
+    void main(){
+      gl_Position=uMVP*vec4(aP,1.0);
+      vec3 mixN=normalize(mix(aN,normalize(aP),0.18));
+      vN=normalize(uNM*mixN);
+      vUV=aUV;
+    }
+  `));
+  gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,`
+    precision mediump float;
+    varying vec3 vN;varying vec2 vUV;
+    uniform sampler2D uMatcap;
+    uniform sampler2D uDigits;
+    void main(){
+      vec2 mcUV=clamp(vN.xy*0.5+0.5,0.001,0.999);
+      vec4 metal=texture2D(uMatcap,mcUV);
+      float rim=1.0-abs(vN.z);
+      metal.rgb=mix(metal.rgb,vec3(0.10,0.11,0.13),rim*rim*0.55);
+      float facing=smoothstep(0.55,0.92,vN.z);
+      vec4 d=texture2D(uDigits,vUV);
+      vec3 col=mix(metal.rgb,d.rgb,d.a*facing*0.95);
+      gl_FragColor=vec4(col,1.0);
+    }
+  `));
+  gl.linkProgram(prog);gl.useProgram(prog);
+
+  const mkBuf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
+  const pB=mkBuf(new Float32Array(P)),nB=mkBuf(new Float32Array(NV));
+  const uB=mkBuf(new Float32Array(UV));
+  const iB=mkBuf(new Uint16Array(IX),gl.ELEMENT_ARRAY_BUFFER);
+  const nIdx=IX.length;
+  const aP_=gl.getAttribLocation(prog,'aP'),aN_=gl.getAttribLocation(prog,'aN'),aUV_=gl.getAttribLocation(prog,'aUV');
+  const uMVP_=gl.getUniformLocation(prog,'uMVP'),uNM_=gl.getUniformLocation(prog,'uNM');
+  const uMC_=gl.getUniformLocation(prog,'uMatcap'),uDg_=gl.getUniformLocation(prog,'uDigits');
+
+  const mul=(a,b)=>{const r=new Float32Array(16);for(let c=0;c<4;c++)for(let rw=0;rw<4;rw++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+rw]*b[c*4+k];r[c*4+rw]=s;}return r;};
+  const rY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
+  const rX=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);};
+  const tr=(x,y,z)=>{const m=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);m[12]=x;m[13]=y;m[14]=z;return m;};
+  const persp=(fov,near,far)=>{const f=1/Math.tan(fov/2),nf=1/(near-far);return new Float32Array([f,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);};
+  const m3=m=>new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]]);
+
+  /* rotazione finale: porta la faccia scelta perpendicolare alla camera.
+     - slot 0 (faccia inferiore): rX(-π/2) per ribaltare il dado
+     - slot 1-3 (facce laterali): elev = atan(1/(2√2)) ≈ 19.47° */
+  const fIdx=(result-1)%4;
+  const elev=Math.atan(1/(2*Math.sqrt(2))); /* ≈ 0.3398 rad */
+  let baseAngY,fAngX;
+  if(fIdx===0){       baseAngY=0;            fAngX=-PI/2; }
+  else if(fIdx===1){  baseAngY=-PI/3;        fAngX=elev; }      /* az 60° */
+  else if(fIdx===2){  baseAngY=-PI;          fAngX=elev; }      /* az 180° */
+  else {              baseAngY=-5*PI/3;      fAngX=elev; }      /* az 300° */
+  const fAngY=baseAngY;
+  const spX=(3+Math.floor(Math.random()*3))*PI*2*(Math.random()>.5?1:-1);
+  const spY=(4+Math.floor(Math.random()*3))*PI*2*(Math.random()>.5?1:-1);
+
+  const TOTAL=150,proj=persp(0.82,0.3,10.0),cam=tr(0,0,-2.5);
+  gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.clearColor(0,0,0,0);
+  const bind=(b,loc,sz)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,sz,gl.FLOAT,false,0,0);};
+
+  let fr=0,alive=true;
+  (function draw(){
+    if(!alive)return;
+    const t=Math.min(fr/TOTAL,1);
+    const arcY=0.40*Math.sin(PI*t);
+    const ease=1-Math.pow(1-t,5);
+    const ax=(fAngX-spX)+spX*ease,ay=(fAngY-spY)+spY*ease;
+    const model=mul(tr(0,arcY,0),mul(rX(ax),rY(ay)));
+    const mvp=mul(proj,mul(cam,model));
+    gl.viewport(0,0,SZ,SZ);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    bind(pB,aP_,3);bind(nB,aN_,3);bind(uB,aUV_,2);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iB);
+    gl.uniformMatrix4fv(uMVP_,false,mvp);gl.uniformMatrix3fv(uNM_,false,m3(model));
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,mcTex);gl.uniform1i(uMC_,0);
+    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,digTex);gl.uniform1i(uDg_,1);
+    gl.drawElements(gl.TRIANGLES,nIdx,gl.UNSIGNED_SHORT,0);
+    ctx2d.clearRect(0,0,SZ,SZ);
+    ctx2d.save();
+    ctx2d.beginPath();ctx2d.arc(SZ/2,SZ/2,SZ/2,0,6.2832);ctx2d.clip();
+    ctx2d.drawImage(cvGL,0,0);
+    ctx2d.restore();
+    fr++;
+    if(t<1){requestAnimationFrame(draw);}
+    else{setTimeout(()=>{if(onDone)onDone();},300);}
+  })();
+  return()=>{alive=false;};
+}
+
 function rollDice(sides,btn){
   if(rollDice._busy)return; /* blocca qualsiasi dado mentre un'animazione è in corso */
   rollDice._busy=true;
@@ -1339,6 +1559,43 @@ function rollDice(sides,btn){
         if(ov){
           ov.classList.remove('show');
           const w=ov.querySelector('.d6-wrap');if(w)w.remove();
+          const num=document.getElementById('don'+p.id);
+          if(num)num.style.display='';
+        }
+      });
+      rollDice._busy=false;
+    },8000);
+    return;
+  }
+
+  /* ── D4: animazione tetraedro 3D ── */
+  if(sides===4){
+    const minR=Math.min(...rolls),maxR=Math.max(...rolls);
+    const tie=minR===maxR||players.length<2;
+    players.forEach((p,i)=>{
+      const ov=document.getElementById('do'+p.id);
+      const num=document.getElementById('don'+p.id);
+      const lbl=document.getElementById('dol'+p.id);
+      if(!ov)return;
+      ov.classList.add('show');
+      if(num){num.textContent='';num.className='dice-overlay-num';}
+      if(lbl)lbl.textContent='';
+      const f=rolls[i];
+      const isBest=!tie&&f===maxR, isWorst=!tie&&f===minR;
+      startD4Anim(ov,f,()=>{
+        soundDice(f,sides);
+        const wrap=ov.querySelector('.d4-wrap');
+        if(wrap){wrap.classList.toggle('d6-best',isBest);wrap.classList.toggle('d6-worst',isWorst);}
+        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D4 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
+      });
+    });
+    haptic('dice');
+    setTimeout(()=>{
+      players.forEach(p=>{
+        const ov=document.getElementById('do'+p.id);
+        if(ov){
+          ov.classList.remove('show');
+          const w=ov.querySelector('.d4-wrap');if(w)w.remove();
           const num=document.getElementById('don'+p.id);
           if(num)num.style.display='';
         }
