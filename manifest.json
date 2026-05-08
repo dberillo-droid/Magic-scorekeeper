@@ -1,7 +1,7 @@
 {
   "name": "Magic Score",
   "short_name": "Magic Score",
-  "description": "Segnapunti per Magic: The Gathering",
+  "description": "Scorekeeper for Magic: The Gathering",
   "start_url": "/",
   "display": "fullscreen",
   "background_color": "#0a0a0f",

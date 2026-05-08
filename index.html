@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -190,13 +190,13 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 <div class="top-wrap" id="topWrap">
   <div class="topbar">
     <div class="wake-dot off" id="wakeDot"></div>
-    <button class="sp-btn on" id="b20" onclick="setLife(20)">20PV</button>
-    <button class="sp-btn" id="b30" onclick="setLife(30)">30PV</button>
-    <button class="sp-btn" id="b40" onclick="setLife(40)">40PV</button>
-    <button class="sp-btn" id="b60" onclick="setLife(60)">60PV</button>
+    <button class="sp-btn on" id="b20" onclick="setLife(20)">20LP</button>
+    <button class="sp-btn" id="b30" onclick="setLife(30)">30LP</button>
+    <button class="sp-btn" id="b40" onclick="setLife(40)">40LP</button>
+    <button class="sp-btn" id="b60" onclick="setLife(60)">60LP</button>
     <button class="tb-btn" id="diceToggleBtn" onclick="toggleDice()">🎲</button>
     <button class="tb-btn" onclick="undoLast()">↩</button>
-    <button class="tb-btn" onclick="resetAll()">Nuova</button>
+    <button class="tb-btn" onclick="resetAll()">New</button>
     <button class="tb-btn" onclick="addPlayer()">＋</button>
     <button class="tb-btn" onclick="toggleCardSearch()">🔍</button>
   </div>
@@ -209,13 +209,13 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 
 <div class="arena">
   <div class="winner" id="winBox">
-    <div class="winner-label">VINCITORE</div>
+    <div class="winner-label">WINNER</div>
     <div class="winner-name" id="winName"></div>
   </div>
   <div class="card-search-overlay" id="csOverlay" onclick="closeCardSearchOnBg(event)">
     <div class="card-search-box">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:600;">CERCA CARTA</span>
+        <span style="font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:600;">CARD SEARCH</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="cs-lang-toggle">
             <button class="cs-lang-btn active" id="csLangIta" onclick="setCsLang('ita')">ITA</button>
@@ -225,8 +225,8 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
         </div>
       </div>
       <div class="cs-input-row">
-        <input class="cs-input" id="csInput" placeholder="Nome carta..." onkeydown="if(event.key==='Enter')searchCard()">
-        <button class="cs-search-btn" onclick="searchCard()">Cerca</button>
+        <input class="cs-input" id="csInput" placeholder="Card name..." onkeydown="if(event.key==='Enter')searchCard()">
+        <button class="cs-search-btn" onclick="searchCard()">Search</button>
       </div>
       <div class="cs-result" id="csResult"></div>
     </div>
@@ -1529,7 +1529,7 @@ function rollDice(sides,btn){
       if(lbl)lbl.textContent='';
       setTimeout(()=>startCoinAnim(ov,rolls[i],()=>{ /* animazione ritardata di 300ms */
         soundDice(rolls[i],sides);
-        if(lbl)lbl.textContent=rolls[i]===1?'TESTA':'CROCE';
+        if(lbl)lbl.textContent=rolls[i]===1?'HEADS':'TAILS';
       }),300);
     });
     haptic('dice');
@@ -1567,7 +1567,7 @@ function rollDice(sides,btn){
         soundDice(f,sides);
         const wrap=ov.querySelector('.d6-wrap');
         if(wrap){wrap.classList.toggle('d6-best',isBest);wrap.classList.toggle('d6-worst',isWorst);}
-        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D6 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
+        if(lbl){lbl.textContent=isBest?'BEST':isWorst?'WORST':'D6 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
       });
     });
     haptic('dice');
@@ -1605,7 +1605,7 @@ function rollDice(sides,btn){
         soundDice(f,sides);
         const wrap=ov.querySelector('.d4-wrap');
         if(wrap){wrap.classList.toggle('d6-best',isBest);wrap.classList.toggle('d6-worst',isWorst);}
-        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D4 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
+        if(lbl){lbl.textContent=isBest?'BEST':isWorst?'WORST':'D4 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
       });
     });
     haptic('dice');
@@ -1643,7 +1643,7 @@ function rollDice(sides,btn){
         soundDice(f,sides);
         const wrap=ov.querySelector('.d10-wrap');
         if(wrap){wrap.classList.toggle('d6-best',isBest);wrap.classList.toggle('d6-worst',isWorst);}
-        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D10 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
+        if(lbl){lbl.textContent=isBest?'BEST':isWorst?'WORST':'D10 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
       });
     });
     haptic('dice');
@@ -1681,7 +1681,7 @@ function rollDice(sides,btn){
         soundDice(f,sides);
         const wrap=ov.querySelector('.d20-wrap');
         if(wrap){wrap.classList.toggle('d6-best',isBest);wrap.classList.toggle('d6-worst',isWorst);}
-        if(lbl){lbl.textContent=isBest?'IL MIGLIORE':isWorst?'IL PEGGIORE':'D20 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
+        if(lbl){lbl.textContent=isBest?'BEST':isWorst?'WORST':'D20 · '+f;lbl.className='dice-overlay-label'+(isBest?' best':isWorst?' worst':'');}
       });
     });
     haptic('dice');
@@ -1724,7 +1724,7 @@ function rollDice(sides,btn){
         const isMin=!isFail&&f===minRoll&&(players.length<2||minRoll!==maxRoll);
         num.className='dice-overlay-num'+(isCrit?' crit':isFail?' fail':isMax?' best':isMin?' worst':'');
         num.classList.remove('rolling-anim'); void num.offsetWidth; num.classList.add('rolling-anim');
-        if(lbl) lbl.textContent=isCrit?'CRITICO!':isFail?'FALLIMENTO':isMax?'IL MIGLIORE':isMin?'IL PEGGIORE':'D'+sides;
+        if(lbl) lbl.textContent=isCrit?'CRITICAL!':isFail?'FUMBLE':isMax?'BEST':isMin?'WORST':'D'+sides;
         soundDice(f,sides);
       });
       haptic('dice');
@@ -1788,7 +1788,7 @@ function closeCardSearchOnBg(e){if(e.target===e.currentTarget)toggleCardSearch()
 async function searchCard(){
   const name=document.getElementById('csInput').value.trim();if(!name)return;
   const res=document.getElementById('csResult');
-  res.innerHTML='<div class="cs-loading">Ricerca in corso...</div>';
+  res.innerHTML='<div class="cs-loading">Searching...</div>';
   const enc=encodeURIComponent(name);
   const q=_csLang==='ita'
     ?'https://api.scryfall.com/cards/search?q=lang%3Ait+%22'+enc+'%22&unique=names&order=name'
@@ -1802,30 +1802,30 @@ async function searchCard(){
         :'https://api.scryfall.com/cards/search?q=name%3A'+enc+'&unique=names&order=name';
       r=await fetch(q2);
     }
-    if(!r.ok){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
+    if(!r.ok){res.innerHTML='<div class="cs-error">Card not found.</div>';return;}
     const json=await r.json();
-    if(!json.data?.length){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
+    if(!json.data?.length){res.innerHTML='<div class="cs-error">Card not found.</div>';return;}
     const cards=json.data,total=json.total_cards;
     if(cards.length===1){await showCard(cards[0].name);return;}
     const nl=name.toLowerCase();
     const exactMatch=cards.find(c=>c.name.toLowerCase()===nl||(c.printed_name&&c.printed_name.toLowerCase()===nl));
     if(exactMatch){await showCard(exactMatch.name);return;}
     renderCardList(cards,total);
-  }catch(e){res.innerHTML='<div class="cs-error">Errore di rete. Controlla la connessione.</div>';}
+  }catch(e){res.innerHTML='<div class="cs-error">Network error. Check your connection.</div>';}
 }
 
 function renderCardList(cards,total){
   const MAX=30;const shown=cards.slice(0,MAX);
   const res=document.getElementById('csResult');
   const ita=_csLang==='ita';
-  res.innerHTML='<div class="cs-list-title">'+total+' CARTE TROVATE — SCEGLI</div>'
+  res.innerHTML='<div class="cs-list-title">'+total+' CARDS FOUND — PICK ONE</div>'
     +'<div class="cs-list">'+shown.map(c=>{
       const displayName=ita?(c.printed_name||c.name):c.name;
       const displayType=ita?(c.printed_type_line||c.type_line):c.type_line;
       const subName=ita&&c.printed_name?'<div class="cs-list-item-sub">'+c.name+'</div>':'';
       return '<div class="cs-list-item" onclick="showCard(\''+c.name.replace(/'/g,"\\'")+'\')"><div class="cs-list-item-name">'+displayName+'</div>'+subName+'<div class="cs-list-item-meta">'+displayType+'</div></div>';
     }).join('')+'</div>'
-    +(total>MAX?'<div class="cs-more">Mostrate '+MAX+' di '+total+' — affina la ricerca</div>':'');
+    +(total>MAX?'<div class="cs-more">Showing '+MAX+' of '+total+' — refine search</div>':'');
 }
 
 async function showCard(exactName){
@@ -1836,7 +1836,7 @@ async function showCard(exactName){
     const fetches=[fetch('https://api.scryfall.com/cards/named?exact='+encodeURIComponent(exactName))];
     if(_csLang==='ita') fetches.push(fetch('https://api.scryfall.com/cards/search?q=!%22'+encodeURIComponent(exactName)+'%22+lang%3Ait&unique=prints'));
     const [r,rIt]=await Promise.all(fetches);
-    if(!r.ok){res.innerHTML='<div class="cs-error">Carta non trovata.</div>';return;}
+    if(!r.ok){res.innerHTML='<div class="cs-error">Card not found.</div>';return;}
     const card=await r.json();
     let itaPrint=null;
     if(rIt?.ok){try{const j=await rIt.json();itaPrint=j.data?.[0]||null;}catch(e){}}
@@ -1844,19 +1844,19 @@ async function showCard(exactName){
     const displayType=itaPrint?.printed_type_line||card.type_line;
     const subName=itaPrint?.printed_name?'<div class="cs-card-sub">'+card.name+'</div>':'';
     let rulingHTML='';
-    try{const rr=await fetch(card.rulings_uri);const rulings=await rr.json();if(rulings.data&&rulings.data.length){rulingHTML='<div class="cs-rulings-title">REGOLE UFFICIALI</div>'+rulings.data.map(x=>'<div class="cs-ruling"><div class="cs-ruling-date">'+x.published_at+'</div>'+x.comment+'</div>').join('');}}catch(e){}
+    try{const rr=await fetch(card.rulings_uri);const rulings=await rr.json();if(rulings.data&&rulings.data.length){rulingHTML='<div class="cs-rulings-title">OFFICIAL RULINGS</div>'+rulings.data.map(x=>'<div class="cs-ruling"><div class="cs-ruling-date">'+x.published_at+'</div>'+x.comment+'</div>').join('');}}catch(e){}
     const oracle=(card.oracle_text||'Nessun testo regole.').replace(/\{([^}]+)\}/g,'[$1]');
-    const backBtn=document.getElementById('csInput').value.trim()?'<button class="cs-back-btn" onclick="searchCard()">← Risultati</button>':'';
-    const gathererLink=card.related_uris?.gatherer?'<a class="cs-gatherer-link" href="'+card.related_uris.gatherer+'" target="_blank" rel="noopener">🔗 Apri su Gatherer</a>':'';
+    const backBtn=document.getElementById('csInput').value.trim()?'<button class="cs-back-btn" onclick="searchCard()">← Results</button>':'';
+    const gathererLink=card.related_uris?.gatherer?'<a class="cs-gatherer-link" href="'+card.related_uris.gatherer+'" target="_blank" rel="noopener">🔗 Open on Gatherer</a>':'';
     res.innerHTML=backBtn+'<div class="cs-card-name">'+displayName+'</div>'+subName+'<div class="cs-card-meta">'+(card.mana_cost||'')+' · '+displayType+'</div><div class="cs-oracle">'+oracle+'</div>'+rulingHTML+gathererLink;
-  }catch(e){res.innerHTML='<div class="cs-error">Errore di rete. Controlla la connessione.</div>';}
+  }catch(e){res.innerHTML='<div class="cs-error">Network error. Check your connection.</div>';}
 }
 
 const STORAGE_KEY='magic_scorekeeper_v1';
 function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({startLife,players:players.map(p=>({id:p.id,name:p.name,life:p.life,poison:p.poison,energy:p.energy,dead:p.dead,colorIdx:p.colorIdx,manaIdx:p.manaIdx,bgImage:p.bgImage,bgOpacity:p.bgOpacity}))}));}catch(e){}}
 function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return false;const s=JSON.parse(raw);if(!s.players||!s.players.length)return false;startLife=s.startLife||20;uid=Math.max(...s.players.map(p=>p.id))+1;players=s.players.map(p=>({...p,settingsOpen:false}));return true;}catch(e){return false;}}
-function init(){if(!loadState()){players=[mkP('Giocatore 1',0),mkP('Giocatore 2',1)];}history=[];render();}
-function addPlayer(){if(players.length>=6)return;const usedMana=new Set(players.map(p=>p.manaIdx));const mi=MANA.findIndex((_,i)=>!usedMana.has(i));players.push(mkP('Giocatore '+(players.length+1),mi>=0?mi:uid%MANA.length));render();}
+function init(){if(!loadState()){players=[mkP('Player 1',0),mkP('Player 2',1)];}history=[];render();}
+function addPlayer(){if(players.length>=6)return;const usedMana=new Set(players.map(p=>p.manaIdx));const mi=MANA.findIndex((_,i)=>!usedMana.has(i));players.push(mkP('Player '+(players.length+1),mi>=0?mi:uid%MANA.length));render();}
 function removePlayer(id){if(players.length<=2)return;players=players.filter(p=>p.id!==id);history=history.filter(h=>h.id!==id);delete pending[id];render();}
 function resetAll(){players.forEach(p=>{p.life=startLife;p.poison=0;p.energy=0;p.dead=false;});history=[];checkWinner();render();}
 function setLife(n){startLife=n;document.querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('on'));document.getElementById('b'+n)?.classList.add('on');players.forEach(p=>{p.life=n;p.poison=0;p.energy=0;p.dead=false;});history=[];render();}
@@ -1913,7 +1913,7 @@ function checkWinner(){
   if(players.length>1&&alive.length===1){
     if(!wb.classList.contains('on')){soundWin();haptic('win');}
     wb.classList.add('on');
-    document.getElementById('winName').textContent=alive[0].name||'Giocatore';
+    document.getElementById('winName').textContent=alive[0].name||'Player';
   } else wb.classList.remove('on');
 }
 
@@ -1995,7 +1995,7 @@ function cardHTML(p){
     <div class="life-center">
       <div class="life-num" id="ln${p.id}" style="color:${lifeColor}">${p.life}</div>
       <div class="life-delta" id="ld${p.id}"></div>
-      <div class="life-sub">PUNTI VITA</div>
+      <div class="life-sub">LIFE POINTS</div>
     </div>
   </div>
   <div class="counters">
