@@ -344,9 +344,9 @@ function playCoinSound(){
 }
 
 function startCoinAnim(overlayEl, result, onDone){
-  /* dimensione adattiva, identica a quella dei dadi 3D */
+  /* dimensione adattiva, ~1.5× quella dei dadi 3D */
   const rect=overlayEl.getBoundingClientRect();
-  const SZ=Math.max(54,Math.min(112,Math.floor(Math.min(rect.width,rect.height)*0.36)));
+  const SZ=Math.max(81,Math.min(168,Math.floor(Math.min(rect.width,rect.height)*0.54)));
   const numEl=overlayEl.querySelector('.dice-overlay-num');
   /* rimuovi canvas residuo da lancio precedente */
   const oldCv=overlayEl.querySelector('canvas');if(oldCv)oldCv.remove();
