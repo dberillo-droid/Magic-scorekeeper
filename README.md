@@ -1,84 +1,96 @@
 # Magic Score 🧙‍♂️
 
-Segnapunti PWA per **Magic: The Gathering**, ottimizzato per dispositivi mobile.  
-Nessuna installazione richiesta — funziona direttamente dal browser e può essere aggiunto alla schermata Home come app nativa.
+PWA scorekeeper for **Magic: The Gathering**, mobile-first.
+No installation required — runs straight from the browser and can be added to the Home screen as a native app.
+
+🔗 **Live**: https://dberillo-droid.github.io/Magic-scorekeeper/
 
 ---
 
-## Funzionalità
+## Features
 
-### 🃏 Gestione giocatori
-- Da **2 a 6 giocatori** simultanei
-- Punti vita configurabili: **20 / 30 / 40 / 60 PV**
-- Contatori **veleno** (☠ 0–10) e **energia** (⚡ 0–5)
-- Colore e icona mana assegnati automaticamente in base al tipo scelto (Bianco, Blu, Nero, Rosso, Verde, Incolore)
-- Immagine di sfondo personalizzata per ogni giocatore
-- Layout adattivo: verticale su telefono, griglia su tablet/desktop
+### 🃏 Player management
+- **2 to 6 players** simultaneously
+- Configurable starting life: **20 / 30 / 40 / 60 LP**
+- **Poison** counter (☠ 0–10) and **energy** counter (⚡ 0–5)
+- Mana color and icon auto-assigned based on the chosen type (White, Blue, Black, Red, Green, Colorless)
+- Custom background image per player
+- Adaptive layout: vertical on phones, grid on tablet / desktop
 
-### 🎲 Dado
-- Supporto per **D2, D3, D4, D6, D10, D20, D100**
-- Animazione di lancio con risultato in sovraimpressione su ogni carta
-- Il risultato più alto e più basso rimangono visibili 2 secondi in più
+### 🎲 3D Dice (WebGL)
+- Support for **D2, D4, D6, D10, D20**
+- Each die is a real 3D mesh rendered with WebGL — proper geometry, planar faces, matcap "liquid metal" shading:
+  - **D2**: animated coin flip
+  - **D4**: regular tetrahedron, 4 triangular faces
+  - **D6**: chamfered cube with bevelled edges and dot pips
+  - **D10**: pentagonal trapezohedron, digits 1–9 + "0" for 10
+  - **D20**: icosahedron, 20 triangular faces with digits 1–20
+- The face that lands always faces the camera squarely — no overlapping side faces
+- Per-roll **rolling sound** that follows the easing curve (denser clicks at start, sparser as the die slows down). Lower-pitched for bigger dice.
+- **Result highlight**: green glow for the best roll, red glow for the worst
+- Final-result audio: ascending fanfare for the max roll, descending tones for `1` (fumble), settle thud otherwise
 
 ### ↩ Undo
-- Annulla l'ultima modifica ai **punti vita** o al **veleno**
-- Storico fino a 40 mosse
+- Undo the last **life points** or **poison** change
+- History keeps the last 40 actions
 
-### 🏆 Rilevamento vincitore
-- Banner automatico quando un solo giocatore è ancora in vita
-- Scomparsa automatica al click su **Nuova partita**
+### 🏆 Winner detection
+- Automatic banner when a single player is still alive
+- Disappears automatically when you start a new game
 
-### 🔍 Ricerca carte
-- Cerca qualsiasi carta MTG per nome
-- Risultati multipli con lista selezionabile
-- Match esatto → dettaglio diretto
-- Mostra: **oracle text** (regole ufficiali), **rulings** Wizards of the Coast, link diretto a **Gatherer**
-- Dati forniti da [Scryfall API](https://scryfall.com)
+### 🔍 Card search
+- Search any MTG card by name
+- Multiple-result picker, exact match opens straight to detail
+- Shows: **oracle text** (official rules), Wizards of the Coast **rulings**, direct **Gatherer** link
+- Italian / English language toggle to fetch the appropriate printing
+- Powered by [Scryfall API](https://scryfall.com)
 
-### 💾 Persistenza sessione
-- Nome giocatori, punti vita, segnalini e immagini di sfondo vengono **salvati automaticamente**
-- Al riavvio dell'app lo stato viene ripristinato esattamente com'era
+### 💾 Session persistence
+- Player names, life, counters and background images are **saved automatically**
+- State is restored exactly as you left it on next launch
 
 ---
 
-## Installazione come app (PWA)
+## Install as an app (PWA)
 
 ### iPhone / iPad
-1. Apri l'URL in **Safari**
-2. Tocca **Condividi** → **Aggiungi a schermata Home**
+1. Open the URL in **Safari**
+2. Tap **Share** → **Add to Home Screen**
 
 ### Android
-1. Apri l'URL in **Chrome**
-2. Tocca il menu **⋮** → **Aggiungi a schermata Home**
+1. Open the URL in **Chrome**
+2. Tap the **⋮** menu → **Add to Home Screen**
 
 ---
 
-## Sviluppo locale
+## Local development
 
-Il progetto è un singolo file `index.html` — nessuna dipendenza, nessun build step.
+The project is a single `index.html` file — no dependencies, no build step.
 
 ```bash
 git clone https://github.com/dberillo-droid/Magic-scorekeeper
 cd Magic-scorekeeper
-# Avvia un server locale (es. con Python)
+# Start a local server (e.g. Python)
 python -m http.server 3333
-# oppure con Node
+# or with Node
 npx serve .
 ```
 
-Apri `http://localhost:3333` nel browser.
+Then open `http://localhost:3333` in your browser.
 
 ---
 
-## Tecnologie
+## Tech stack
 
-- HTML / CSS / JavaScript vanilla — nessun framework
-- [Scryfall API](https://scryfall.com/docs/api) per i dati delle carte
-- PWA con Service Worker per uso offline
-- `localStorage` per la persistenza della sessione
+- Vanilla HTML / CSS / JavaScript — no framework
+- WebGL 1 for the 3D dice (custom matcap shader, planar polyhedra, digit atlas)
+- Web Audio API for synthesised dice / coin / UI sounds
+- [Scryfall API](https://scryfall.com/docs/api) for card data
+- PWA with Service Worker
+- `localStorage` for session persistence
 
 ---
 
-## Licenza
+## License
 
 MIT
