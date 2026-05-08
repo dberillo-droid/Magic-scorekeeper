@@ -277,9 +277,36 @@ function soundPlus(){ beep(440, 0.10, 0.13, 'sine'); }
 function soundCommitMinus(){ beep(180,0.18,0.18,'triangle'); setTimeout(()=>beep(140,0.14,0.12,'triangle'),80); }
 function soundCommitPlus(){ beep(520,0.10,0.15,'sine'); setTimeout(()=>beep(660,0.12,0.13,'sine'),70); }
 function soundDice(result, sides){
-  if(result===20&&sides===20){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.15,0.18,'sine'),i*80)); }
-  else if(result===1&&sides===20){ [300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.18,'sawtooth'),i*100)); }
-  else { beep(300+result*12, 0.12, 0.13, 'triangle'); }
+  /* sound del risultato finale (chiamato a fine animazione) */
+  if(result===sides && sides>=4){
+    /* MAX (critico): fanfare ascendente */
+    [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.15,0.18,'sine'),i*80));
+  } else if(result===1 && sides>=6){
+    /* FUMBLE: discesa cupa */
+    [300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.18,'sawtooth'),i*100));
+  } else {
+    /* normale: thud finale di assestamento */
+    beep(140+result*5, 0.18, 0.18, 'triangle');
+  }
+}
+/* suono di rotolamento del dado: tanti click rapidi che seguono la curva di easing
+   dell'animazione (più densi all'inizio, sempre più radi alla fine).
+   Frequenza base più bassa per dadi più grandi (D20 più grave del D4). */
+function playDiceRollSound(sides){
+  try{
+    const totalMs=2300;
+    const N=Math.max(10,Math.min(22,sides+4));
+    const baseFreq=sides>=20?60:sides>=10?80:sides>=6?100:130;
+    for(let i=0;i<N;i++){
+      /* mappatura t = 1 - (1 - i/N)^(1/5) → click distribuiti in proporzione alla rotazione */
+      const t=1-Math.pow(1-i/N,0.2);
+      const delay=t*totalMs;
+      const f=baseFreq+Math.random()*100;
+      const dur=0.02+Math.random()*0.03;
+      const vol=0.13-(i/N)*0.04;
+      setTimeout(()=>beep(f,dur,vol,'sawtooth'),delay);
+    }
+  }catch(e){}
 }
 function soundDead(){ [200,160,120].forEach((f,i)=>setTimeout(()=>beep(f,0.22,0.18,'sawtooth'),i*120)); }
 function soundWin(){ [523,659,784,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.18,'sine'),i*90)); }
@@ -1522,6 +1549,7 @@ function rollDice(sides,btn){
 
   /* ── D6: animazione dado 3D ── */
   if(sides===6){
+    playDiceRollSound(sides);
     const minR=Math.min(...rolls),maxR=Math.max(...rolls);
     const tie=minR===maxR||players.length<2;
     players.forEach((p,i)=>{
@@ -1559,6 +1587,7 @@ function rollDice(sides,btn){
 
   /* ── D4: animazione tetraedro 3D ── */
   if(sides===4){
+    playDiceRollSound(sides);
     const minR=Math.min(...rolls),maxR=Math.max(...rolls);
     const tie=minR===maxR||players.length<2;
     players.forEach((p,i)=>{
@@ -1596,6 +1625,7 @@ function rollDice(sides,btn){
 
   /* ── D10: animazione dado 3D ── */
   if(sides===10){
+    playDiceRollSound(sides);
     const minR=Math.min(...rolls),maxR=Math.max(...rolls);
     const tie=minR===maxR||players.length<2;
     players.forEach((p,i)=>{
@@ -1633,6 +1663,7 @@ function rollDice(sides,btn){
 
   /* ── D20: animazione icosaedro 3D ── */
   if(sides===20){
+    playDiceRollSound(sides);
     const minR=Math.min(...rolls),maxR=Math.max(...rolls);
     const tie=minR===maxR||players.length<2;
     players.forEach((p,i)=>{
