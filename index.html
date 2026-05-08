@@ -904,11 +904,12 @@ function startD10Anim(overlayEl,result,onDone){
   dx2.font='900 72px "Arial Black","Inter",sans-serif';
   dx2.textAlign='center';dx2.textBaseline='middle';
   const digits=['1','2','3','4','5','6','7','8','9','0']; /* slot 9 = "0" (=10) */
-  /* il centroide della kite cade a v≈0.655 (slot 0-4 upper) o v≈0.345 (slot 5-9 lower) */
+  /* posiziona la cifra al CENTRO VERTICALE del canvas (non al centroide della kite,
+     che è asimmetrico verticalmente). v=0.55 upper / v=0.45 lower → kite y ≈ 0 */
   for(let s=0;s<10;s++){
     const cc=s%4,rr=Math.floor(s/4);
     const ccx=cc*128+64;
-    const ccy=rr*128+(s<5?128*0.655:128*0.345); /* posiziona al centroide kite */
+    const ccy=rr*128+(s<5?128*0.55:128*0.45);
     /* corpo nero pieno, niente outline (distorce sui bordi della kite) */
     dx2.fillStyle='#0a0a0a';dx2.fillText(digits[s],ccx,ccy);
   }
