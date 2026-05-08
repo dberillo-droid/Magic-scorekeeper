@@ -884,11 +884,6 @@ function startD10Anim(overlayEl,result,onDone){
     const ccy=rr*128+(s<5?128*0.655:128*0.345); /* posiziona al centroide kite */
     /* corpo nero pieno, niente outline (distorce sui bordi della kite) */
     dx2.fillStyle='#0a0a0a';dx2.fillText(digits[s],ccx,ccy);
-    /* sottolineatura per 6 e 9 */
-    if(s===5||s===8){
-      const w=dx2.measureText(digits[s]).width;
-      dx2.fillRect(ccx-w*0.30,ccy+30,w*0.6,4);
-    }
   }
   const digTex=mkTex(dt,false);
 
