@@ -1161,11 +1161,14 @@ function startD20Anim(overlayEl,result,onDone){
     IX.push(base,base+1,base+2);
   }
 
-  /* 20 facce: 5 top (apex su) + 5 mid-down (apex giù) + 5 mid-up (apex su) + 5 bot (apex giù) */
-  for(let i=0;i<5;i++){addTri([T,U[i],U[(i+1)%5]],slotUVs(i,'up'));}                  /* slot 0-4: digit 1-5 */
-  for(let i=0;i<5;i++){addTri([U[i],U[(i+1)%5],L[i]],slotUVs(5+i,'down'));}             /* slot 5-9: digit 6-10 */
-  for(let i=0;i<5;i++){addTri([L[i],U[(i+1)%5],L[(i+1)%5]],slotUVs(10+i,'up'));}        /* slot 10-14: digit 11-15 */
-  for(let i=0;i<5;i++){addTri([B,L[(i+1)%5],L[i]],slotUVs(15+i,'down'));}               /* slot 15-19: digit 16-20 */
+  /* 20 facce — l'ORDINE dei vertici DEVE rispettare il template UV:
+     'up'   = [apex, base-left, base-right]
+     'down' = [top-left, top-right, apex]
+     altrimenti la cifra viene letta capovolta o ruotata */
+  for(let i=0;i<5;i++){addTri([T,U[i],U[(i+1)%5]],slotUVs(i,'up'));}                    /* top: T=apex, U[i]=left, U[i+1]=right */
+  for(let i=0;i<5;i++){addTri([U[i],U[(i+1)%5],L[i]],slotUVs(5+i,'down'));}             /* mid-down: U[i]=top-left, U[i+1]=top-right, L[i]=apex */
+  for(let i=0;i<5;i++){addTri([U[(i+1)%5],L[i],L[(i+1)%5]],slotUVs(10+i,'up'));}        /* mid-up: U[i+1]=apex (top), L[i]=bot-left, L[i+1]=bot-right */
+  for(let i=0;i<5;i++){addTri([L[i],L[(i+1)%5],B],slotUVs(15+i,'down'));}               /* bot: L[i]=top-left, L[i+1]=top-right, B=apex */
 
   /* shaders matcap+digits con fade (solo faccia frontale mostra cifra) */
   const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
