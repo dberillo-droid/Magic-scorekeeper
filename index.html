@@ -860,6 +860,28 @@ function startD10Anim(overlayEl,result,onDone){
   mcx.fillStyle=_ct;mcx.fillRect(0,0,256,256);
   const mcTex=mkTex(mc,true);
 
+  /* ── atlas cifre 512×512 (4×3 celle da 128px, 10 cifre) ── */
+  const dt=document.createElement('canvas');dt.width=512;dt.height=512;
+  const dx2=dt.getContext('2d');
+  dx2.clearRect(0,0,512,512);
+  dx2.font='bold 86px "Space Grotesk", Arial, sans-serif';
+  dx2.textAlign='center';dx2.textBaseline='middle';
+  const digits=['1','2','3','4','5','6','7','8','9','0']; /* slot 9 = "0" (rappresenta il 10) */
+  for(let s=0;s<10;s++){
+    const cc=s%4,rr=Math.floor(s/4);
+    const ccx=cc*128+64,ccy=rr*128+64;
+    /* ombra leggera */
+    dx2.fillStyle='rgba(0,0,0,0.55)';dx2.fillText(digits[s],ccx+1.5,ccy+2.5);
+    /* corpo nero */
+    dx2.fillStyle='#0a0a0a';dx2.fillText(digits[s],ccx,ccy);
+    /* sottolineatura per 6 e 9 (ambiguità classica D10) */
+    if(s===5||s===8){
+      const w=dx2.measureText(digits[s]).width;
+      dx2.fillRect(ccx-w*0.35,ccy+38,w*0.7,4);
+    }
+  }
+  const digTex=mkTex(dt,false);
+
   /* ── geometria D10: pentagonal trapezohedron ── */
   const PI=Math.PI,PHI=2*PI/5;
   const ya=0.38,ra=0.85,apexH=1.05;
@@ -867,63 +889,83 @@ function startD10Anim(overlayEl,result,onDone){
   const upper=Array.from({length:5},(_,i)=>[ra*Math.sin(i*PHI),ya,ra*Math.cos(i*PHI)]);
   const lower=Array.from({length:5},(_,i)=>[ra*Math.sin(i*PHI+PHI/2),-ya,ra*Math.cos(i*PHI+PHI/2)]);
 
-  const P=[],NV=[],IX=[];let vi=0;
+  const P=[],NV=[],UV=[],IX=[];let vi=0;
   const vsub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
   const vcrs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
   const vnrm=a=>{const l=Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);return l>0?[a[0]/l,a[1]/l,a[2]/l]:[0,1,0];};
   const vdot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 
-  /* aggiunge un quadrilatero (kite) come 2 triangoli con normale calcolata */
-  function addKite(v0,v1,v2,v3){
-    let n=vnrm(vcrs(vsub(v1,v0),vsub(v2,v0)));
-    const c=[(v0[0]+v1[0]+v2[0]+v3[0])/4,(v0[1]+v1[1]+v2[1]+v3[1])/4,(v0[2]+v1[2]+v2[2]+v3[2])/4];
-    if(vdot(n,c)<0){n=[-n[0],-n[1],-n[2]];const tmp=v1;v1=v3;v3=tmp;}
-    [[v0,v1,v2],[v0,v2,v3]].forEach(([a,b,c])=>{
-      P.push(...a,...b,...c);NV.push(...n,...n,...n);
-      IX.push(vi,vi+1,vi+2);vi+=3;
-    });
+  /* UV per kite: apex=v0 (top/bot), v1=lato, v2=mid (l0/u1), v3=altro lato
+     orient: 'up' = apex visivamente alto, 'down' = apex visivamente basso */
+  function kiteUVs(slot,orient){
+    const cc=slot%4,rr=Math.floor(slot/4);
+    const u0=cc*0.25,v0=rr*0.25,w=0.25;
+    if(orient==='up'){
+      return [[u0+w*0.5,v0+w*0.06],[u0+w*0.06,v0+w*0.5],[u0+w*0.5,v0+w*0.94],[u0+w*0.94,v0+w*0.5]];
+    } else {
+      return [[u0+w*0.5,v0+w*0.94],[u0+w*0.94,v0+w*0.5],[u0+w*0.5,v0+w*0.06],[u0+w*0.06,v0+w*0.5]];
+    }
   }
 
+  /* aggiunge un quadrilatero (kite) — vs array di 4 vertici, uvs array di 4 UV */
+  function addKite(vs,uvs){
+    let n=vnrm(vcrs(vsub(vs[1],vs[0]),vsub(vs[2],vs[0])));
+    const c=[(vs[0][0]+vs[1][0]+vs[2][0]+vs[3][0])/4,(vs[0][1]+vs[1][1]+vs[2][1]+vs[3][1])/4,(vs[0][2]+vs[1][2]+vs[2][2]+vs[3][2])/4];
+    let O=[0,1,2,3];
+    if(vdot(n,c)<0){n=[-n[0],-n[1],-n[2]];O=[0,3,2,1];}
+    const base=vi;
+    for(const k of O){P.push(...vs[k]);NV.push(...n);UV.push(...uvs[k]);vi++;}
+    IX.push(base,base+1,base+2,base,base+2,base+3);
+  }
+
+  /* mappatura kite → slot cifra:
+     - upper kite i (i=0..4) → result (i+1) → slot i (cifre "1".."5")
+     - lower kite j (j=0..4) → slot ((j+1)%5)+5 (cifre "6","7","8","9","0") */
   for(let i=0;i<5;i++){
     const u0=upper[i],u1=upper[(i+1)%5],l0=lower[i],l1=lower[(i+1)%5];
-    addKite(top,u0,l0,u1);       /* faccia superiore i */
-    addKite(bot,l1,u1,l0);       /* faccia inferiore i */
+    addKite([top,u0,l0,u1], kiteUVs(i,'up'));
+    addKite([bot,l1,u1,l0], kiteUVs(((i+1)%5)+5,'down'));
   }
 
-  /* shaders — solo matcap, normali sferizzate */
+  /* shaders — matcap + cifra composita */
   const mkSh=(t,src)=>{const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;};
   const prog=gl.createProgram();
   gl.attachShader(prog,mkSh(gl.VERTEX_SHADER,`
-    attribute vec3 aP;attribute vec3 aN;
+    attribute vec3 aP;attribute vec3 aN;attribute vec2 aUV;
     uniform mat4 uMVP;uniform mat3 uNM;
-    varying vec3 vN;
+    varying vec3 vN;varying vec2 vUV;
     void main(){
       gl_Position=uMVP*vec4(aP,1.0);
-      vec3 mixN=normalize(mix(aN,normalize(aP),0.78));
+      vec3 mixN=normalize(mix(aN,normalize(aP),0.55));
       vN=normalize(uNM*mixN);
+      vUV=aUV;
     }
   `));
   gl.attachShader(prog,mkSh(gl.FRAGMENT_SHADER,`
     precision mediump float;
-    varying vec3 vN;
+    varying vec3 vN;varying vec2 vUV;
     uniform sampler2D uMatcap;
+    uniform sampler2D uDigits;
     void main(){
       vec2 mcUV=clamp(vN.xy*0.5+0.5,0.001,0.999);
       vec4 metal=texture2D(uMatcap,mcUV);
       float rim=1.0-abs(vN.z);
-      metal.rgb=mix(metal.rgb,vec3(0.10,0.11,0.13),rim*rim*0.68);
-      gl_FragColor=vec4(metal.rgb,1.0);
+      metal.rgb=mix(metal.rgb,vec3(0.10,0.11,0.13),rim*rim*0.55);
+      vec4 d=texture2D(uDigits,vUV);
+      vec3 col=mix(metal.rgb,d.rgb,d.a*0.92);
+      gl_FragColor=vec4(col,1.0);
     }
   `));
   gl.linkProgram(prog);gl.useProgram(prog);
 
   const mkBuf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
   const pB=mkBuf(new Float32Array(P)),nB=mkBuf(new Float32Array(NV));
+  const uB=mkBuf(new Float32Array(UV));
   const iB=mkBuf(new Uint16Array(IX),gl.ELEMENT_ARRAY_BUFFER);
   const nIdx=IX.length;
-  const aP_=gl.getAttribLocation(prog,'aP'),aN_=gl.getAttribLocation(prog,'aN');
+  const aP_=gl.getAttribLocation(prog,'aP'),aN_=gl.getAttribLocation(prog,'aN'),aUV_=gl.getAttribLocation(prog,'aUV');
   const uMVP_=gl.getUniformLocation(prog,'uMVP'),uNM_=gl.getUniformLocation(prog,'uNM');
-  const uMC_=gl.getUniformLocation(prog,'uMatcap');
+  const uMC_=gl.getUniformLocation(prog,'uMatcap'),uDg_=gl.getUniformLocation(prog,'uDigits');
 
   const mul=(a,b)=>{const r=new Float32Array(16);for(let c=0;c<4;c++)for(let rw=0;rw<4;rw++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+rw]*b[c*4+k];r[c*4+rw]=s;}return r;};
   const rY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
@@ -953,10 +995,11 @@ function startD10Anim(overlayEl,result,onDone){
     const model=mul(tr(0,arcY,0),mul(rY(ay),rX(ax)));
     const mvp=mul(proj,mul(cam,model));
     gl.viewport(0,0,SZ,SZ);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-    bind(pB,aP_,3);bind(nB,aN_,3);
+    bind(pB,aP_,3);bind(nB,aN_,3);bind(uB,aUV_,2);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iB);
     gl.uniformMatrix4fv(uMVP_,false,mvp);gl.uniformMatrix3fv(uNM_,false,m3(model));
     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,mcTex);gl.uniform1i(uMC_,0);
+    gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,digTex);gl.uniform1i(uDg_,1);
     gl.drawElements(gl.TRIANGLES,nIdx,gl.UNSIGNED_SHORT,0);
     ctx2d.clearRect(0,0,SZ,SZ);
     ctx2d.save();
