@@ -97,6 +97,9 @@ body{display:flex;flex-direction:column;height:100dvh;max-height:100dvh;}
 .dice-overlay-label.worst{color:#f87171;}
 .d6-wrap.d6-best{box-shadow:0 0 18px 4px rgba(74,222,128,0.55);}
 .d6-wrap.d6-worst{box-shadow:0 0 18px 4px rgba(248,113,113,0.55);}
+.d10-wrap{border-radius:50%;}
+.d10-wrap.d6-best{box-shadow:0 0 18px 4px rgba(74,222,128,0.55);}
+.d10-wrap.d6-worst{box-shadow:0 0 18px 4px rgba(248,113,113,0.55);}
 .dice-overlay-num.rolling-anim{animation:diceAnim 0.35s ease-out;}
 
 .grid{flex:1;min-height:0;display:grid;gap:8px;}
@@ -521,7 +524,7 @@ function startCoinAnim(overlayEl, result, onDone){
 function startDiceAnim(overlayEl,result,onDone){
   /* dimensione adattiva: max 130px, ma al più il 42% del lato minore dell'overlay */
   const rect=overlayEl.getBoundingClientRect();
-  const SZ=Math.max(60,Math.min(130,Math.floor(Math.min(rect.width,rect.height)*0.42)));
+  const SZ=Math.max(54,Math.min(112,Math.floor(Math.min(rect.width,rect.height)*0.36)));
   const numEl=overlayEl.querySelector('.dice-overlay-num');
   const oldWrap=overlayEl.querySelector('.d6-wrap');if(oldWrap)oldWrap.remove();
   if(numEl){numEl.style.display='none';numEl.textContent='';}
@@ -798,7 +801,7 @@ function startDiceAnim(overlayEl,result,onDone){
    ═══════════════════════════════════════════════════════ */
 function startD10Anim(overlayEl,result,onDone){
   const rect=overlayEl.getBoundingClientRect();
-  const SZ=Math.max(60,Math.min(130,Math.floor(Math.min(rect.width,rect.height)*0.42)));
+  const SZ=Math.max(54,Math.min(112,Math.floor(Math.min(rect.width,rect.height)*0.36)));
   const numEl=overlayEl.querySelector('.dice-overlay-num');
   const oldWrap=overlayEl.querySelector('.d10-wrap');if(oldWrap)oldWrap.remove();
   if(numEl){numEl.style.display='none';numEl.textContent='';}
