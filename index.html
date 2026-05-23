@@ -1529,10 +1529,10 @@ function rollDice(sides,btn){
       ov.classList.add('show');
       if(num){num.textContent='';num.className='dice-overlay-num';}
       if(lbl)lbl.textContent='';
-      setTimeout(()=>startCoinAnim(ov,rolls[i],()=>{ /* animazione ritardata di 300ms */
+      setTimeout(()=>startCoinAnim(ov,rolls[i],()=>{
         soundDice(rolls[i],sides);
         if(lbl)lbl.textContent=rolls[i]===1?'HEADS':'TAILS';
-      }),300);
+      }),150+Math.floor(Math.random()*500));
     });
     haptic('dice');
     setTimeout(()=>{
